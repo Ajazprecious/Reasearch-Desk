@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, ImagePlus, Loader2, Save } from "lucide-react";
+import { Check, ImagePlus, Loader2, Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { localClient } from "@/api/localClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/workspace/StatusBadge";
 import { submitDraft } from "@/lib/server-fns";
+import { askStudentResearchAssistant } from "@/lib/ai-fns";
 import { formatDateTime, timeAgo, wordCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ const plainText = (html) => String(html || "").replace(/<[^>]*>/g, " ");
 /** Collaborative writing surface: autosaves the working document, then submits it as a version. */
 export function WritingEditor({ milestones, drafts, user }) {
   const submit = useServerFn(submitDraft);
+  const askAssistant = useServerFn(askStudentResearchAssistant);
   const quillRef = useRef(null);
   const dirty = useRef(false);
 
@@ -38,6 +40,10 @@ export function WritingEditor({ milestones, drafts, user }) {
   const [state, setState] = useState("idle");
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [assistantQuestion, setAssistantQuestion] = useState("");
+  const [assistantAnswer, setAssistantAnswer] = useState("");
+  const [assistantError, setAssistantError] = useState("");
+  const [askingAssistant, setAskingAssistant] = useState(false);
 
   const chapter = milestones.find((milestone) => milestone.id === chapterId) || null;
   const versions = drafts.filter((draft) => draft.milestone_id === chapterId);
@@ -139,6 +145,30 @@ export function WritingEditor({ milestones, drafts, user }) {
       toast.error(err?.message || "Could not submit this version");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function askForGuidance(event) {
+    event.preventDefault();
+    const question = assistantQuestion.trim();
+    if (!question) return;
+    setAskingAssistant(true);
+    setAssistantError("");
+    setAssistantAnswer("");
+    try {
+      const response = await askAssistant({
+        data: {
+          question,
+          milestoneId: chapterId || undefined,
+          draftContent: plainText(html).slice(0, 12000),
+        },
+      });
+      setAssistantAnswer(response.answer);
+      setAssistantQuestion("");
+    } catch (error) {
+      setAssistantError(error?.message || "Gemini could not answer right now.");
+    } finally {
+      setAskingAssistant(false);
     }
   }
 
@@ -259,6 +289,39 @@ export function WritingEditor({ milestones, drafts, user }) {
               </div>
             </dl>
           </div>
+
+          <form onSubmit={askForGuidance} className="rounded-2xl border border-[#BFE3DB] bg-white px-5 py-4">
+            <p className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#00796B]">
+              <Sparkles className="h-4 w-4" aria-hidden="true" /> Gemini research assistant
+            </p>
+            <p className="mt-1 text-[11.8px] leading-relaxed text-slate-500">
+              Ask for help planning or improving this chapter. Your current chapter text may be sent to Gemini for context.
+            </p>
+            <Textarea
+              value={assistantQuestion}
+              onChange={(event) => setAssistantQuestion(event.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder="What would make my research question more specific?"
+              className="mt-3 rounded-xl border-slate-200 text-[12.8px] shadow-none focus-visible:ring-1 focus-visible:ring-[#00796B]"
+            />
+            <Button
+              type="submit"
+              disabled={askingAssistant || assistantQuestion.trim().length < 3}
+              className="mt-2 h-9 w-full rounded-xl bg-[#00796B] text-[12.5px] font-medium hover:bg-[#007D6D]"
+            >
+              {askingAssistant ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" /> : <Sparkles className="mr-1.5 h-4 w-4" aria-hidden="true" />}
+              {askingAssistant ? "Thinking…" : "Ask Gemini"}
+            </Button>
+            {assistantError && <p role="alert" className="mt-2 text-[11.8px] text-red-700">{assistantError}</p>}
+            {assistantAnswer && (
+              <div aria-live="polite" className="mt-3 rounded-xl bg-[#F4FAF8] p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#00796B]">Gemini suggestion</p>
+                <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-slate-700">{assistantAnswer}</p>
+                <p className="mt-2 text-[10.8px] text-slate-400">Check suggestions against your course guidance and trusted sources.</p>
+              </div>
+            )}
+          </form>
 
           <div className={cn("rounded-2xl border border-[#E6F4F1] bg-[#F4FAF8] px-5 py-4")}>
             <p className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#00796B]">

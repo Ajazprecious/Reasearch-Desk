@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, GraduationCap, TrendingUp } from "lucide-react";
+import { AlertTriangle, CheckCircle2, GraduationCap, Loader2, Sparkles, TrendingUp } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAsync } from "@/hooks/useAsync";
 import { PageHeader } from "@/components/workspace/PageHeader";
@@ -11,6 +12,8 @@ import { DepartmentCompletionChart } from "@/components/admin/charts/DepartmentC
 import { StageCompletionChart } from "@/components/admin/charts/StageCompletionChart";
 import { StatusMixChart } from "@/components/admin/charts/StatusMixChart";
 import { getAdminReports } from "@/lib/server-fns";
+import { generateAdminAnalyticsInsights } from "@/lib/ai-fns";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authed/admin/reports")({
   head: () => ({ meta: [{ title: "Progress dashboard — ResearchDesk" }] }),
@@ -19,11 +22,41 @@ export const Route = createFileRoute("/_authed/admin/reports")({
 
 function AdminReportsPage() {
   const load = useServerFn(getAdminReports);
+  const generateInsights = useServerFn(generateAdminAnalyticsInsights);
   const { data, loading, error } = useAsync(() => load(), []);
+  const [insights, setInsights] = useState(null);
+  const [insightError, setInsightError] = useState("");
+  const [generating, setGenerating] = useState(false);
 
   const departments = data?.byDepartment || [];
   const statusCounts = data?.statusCounts || [];
   const overdue = departments.reduce((sum, department) => sum + department.overdue, 0);
+
+  async function requestInsights() {
+    if (!data) return;
+    setGenerating(true);
+    setInsightError("");
+    try {
+      const result = await generateInsights({
+        data: {
+          totals: data.totals,
+          byDepartment: departments.map(({ department, students, supervisors, progress, overdue: departmentOverdue }) => ({
+            department,
+            students,
+            supervisors,
+            progress,
+            overdue: departmentOverdue,
+          })),
+          stages: data.stages,
+        },
+      });
+      setInsights(result);
+    } catch (requestError) {
+      setInsightError(requestError?.message || "Gemini could not generate analytics insights.");
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   return (
     <div className="animate-fade space-y-5">
@@ -68,6 +101,37 @@ function AdminReportsPage() {
               tone={overdue ? "rose" : "mint"}
             />
           </div>
+
+          <SectionCard
+            title="Gemini analytics insights"
+            description="AI-generated observations from aggregate programme data; verify them against the charts before acting."
+            action={
+              <Button type="button" variant="outline" onClick={requestInsights} disabled={generating} className="h-9 border-slate-300 text-[12px]">
+                {generating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" /> : <Sparkles className="mr-1.5 h-4 w-4" aria-hidden="true" />}
+                {generating ? "Analyzing…" : "Generate insights"}
+              </Button>
+            }
+          >
+            {insightError ? (
+              <p role="alert" className="text-[12.5px] text-red-700">{insightError}</p>
+            ) : insights ? (
+              <div aria-live="polite" className="space-y-3">
+                <p className="text-[13px] font-medium text-[#0A1929]">{insights.headline}</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Findings</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-4 text-[12px] text-slate-600">{insights.findings.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Suggested actions</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-4 text-[12px] text-slate-600">{insights.suggested_actions.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[12.5px] text-slate-500">Generate an on-demand summary of department progress and milestone trends.</p>
+            )}
+          </SectionCard>
 
           <div className="grid gap-5 lg:grid-cols-2">
             <SectionCard

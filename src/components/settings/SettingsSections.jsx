@@ -15,6 +15,20 @@ export const DEFAULT_SETTINGS = {
   notify_defence: true,
 };
 
+export const ADMIN_DEFAULT_SETTINGS = {
+  restrict_department: true,
+  require_admin_confirmation: true,
+  recheck_capacity: true,
+  flag_unmatched: true,
+  notify_unassigned: true,
+  notify_capacity: true,
+  notify_progress: true,
+  notify_admin_defence: true,
+  notify_assignment_changes: true,
+  notify_new_ticket: true,
+  escalation_reminder: true,
+};
+
 const TIMEZONES = ["West Africa Time (WAT)", "Central Africa Time (CAT)", "East Africa Time (EAT)", "South Africa Standard Time (SAST)", "UTC", "GMT"];
 
 const inputClass = "h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-[#0A1929] outline-none focus:border-[#00796B]";
@@ -163,5 +177,53 @@ export function SecuritySection({ lastChanged, onSignOut }) {
         For institutional account or academic-record corrections, use Reports &amp; Tickets. For system guidance, use Help.
       </p>
     </Card>
+  );
+}
+
+export function AdminSettingsSections({ user, prefs, set, onSignOut }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Card title="Supervisor recommendation rules">
+        <p className="mb-3 rounded-lg bg-[#F6F8F8] px-3 py-2 text-[10.8px] leading-relaxed text-slate-600">
+          Recommendation method: department eligibility + research relevance ranking.
+        </p>
+        <div className="divide-y divide-slate-100">
+          <ToggleRow label="Restrict recommendations to the student's department" description="Only compare supervisors from the student's department." checked={prefs.restrict_department} onChange={(value) => set({ restrict_department: value })} />
+          <ToggleRow label="Administrator confirmation required" description="Prevent the system from assigning supervisors automatically." checked={prefs.require_admin_confirmation} onChange={(value) => set({ require_admin_confirmation: value })} />
+          <ToggleRow label="Repeat capacity check before confirmation" description="Recheck the selected supervisor immediately before assignment." checked={prefs.recheck_capacity} onChange={(value) => set({ recheck_capacity: value })} />
+          <ToggleRow label="Flag when no supervisor is eligible" description="Create an administrator action when all matches fail eligibility." checked={prefs.flag_unmatched} onChange={(value) => set({ flag_unmatched: value })} />
+        </div>
+      </Card>
+
+      <Card title="Administrative notifications">
+        <div className="divide-y divide-slate-100">
+          <ToggleRow label="Unassigned student alerts" description="Notify when a student is ready for supervisor matching." checked={prefs.notify_unassigned} onChange={(value) => set({ notify_unassigned: value })} />
+          <ToggleRow label="Capacity alerts" description="Notify when a supervisor reaches high or full capacity." checked={prefs.notify_capacity} onChange={(value) => set({ notify_capacity: value })} />
+          <ToggleRow label="Progress exceptions" description="Notify about overdue milestones and prolonged review delays." checked={prefs.notify_progress} onChange={(value) => set({ notify_progress: value })} />
+          <ToggleRow label="Defence reminders" description="Notify about upcoming proposal and final defences." checked={prefs.notify_admin_defence} onChange={(value) => set({ notify_admin_defence: value })} />
+          <ToggleRow label="Assignment changes" description="Notify when a supervisor is reassigned or an assignment is cancelled." checked={prefs.notify_assignment_changes} onChange={(value) => set({ notify_assignment_changes: value })} />
+        </div>
+      </Card>
+
+      <Card title="Reports & ticket handling">
+        <div className="divide-y divide-slate-100">
+          <ToggleRow label="Notify on new student ticket" description="Alert administrators when an academic or supervision issue is submitted." checked={prefs.notify_new_ticket} onChange={(value) => set({ notify_new_ticket: value })} />
+          <ToggleRow label="Escalation reminder" description="Remind the assigned team when an open ticket has no update." checked={prefs.escalation_reminder} onChange={(value) => set({ escalation_reminder: value })} />
+        </div>
+      </Card>
+
+      <Card title="Account & security">
+        <p className="text-[12px] font-medium text-[#273A3F]">{user?.full_name || "Postgraduate Admin"} · Administrator</p>
+        <p className="mt-1 text-[11.5px] text-slate-500">{user?.email}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button asChild variant="outline" className="h-9 rounded-lg border-slate-200 text-[11.5px]">
+            <Link to="/forgot-password">Change password</Link>
+          </Button>
+          <Button variant="outline" onClick={onSignOut} className="h-9 rounded-lg border-slate-200 text-[11.5px]">
+            Sign out
+          </Button>
+        </div>
+      </Card>
+    </div>
   );
 }

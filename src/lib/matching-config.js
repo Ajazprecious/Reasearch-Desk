@@ -1,12 +1,12 @@
-// Shared between the local matching settings screen and recommendation service
+import { GEMINI_MODEL, GEMINI_MODEL_LABEL } from "./ai-model.js";
+
+// Shared between the Gemini matching settings screen and recommendation service
 // function, so the numbers an administrator tunes are the numbers the matcher uses.
 
 export const MATCHING_DEFAULTS = {
   engine_enabled: true,
-  provider: "local",
-  model: "tfidf-cosine",
-  embedding_model: "local-keyword-vector",
-  embedding_dimensions: 384,
+  provider: "gemini",
+  model: GEMINI_MODEL,
   similarity_weight: 0.55,
   capacity_weight: 0.1,
   department_boost: 0.04,
@@ -16,18 +16,11 @@ export const MATCHING_DEFAULTS = {
   auto_run: true,
 };
 
-export const MODEL_OPTIONS = [
-  { value: "tfidf-cosine", label: "Deterministic TF-IDF cosine" },
-];
+export const MODEL_OPTIONS = [{ value: GEMINI_MODEL, label: GEMINI_MODEL_LABEL }];
 
-export const EMBEDDING_OPTIONS = [
-  { value: "local-keyword-vector", label: "Local keyword vector · 384d", dimensions: 384 },
-];
-
-export const modelLabel = (value) => MODEL_OPTIONS.find((option) => option.value === value)?.label || value || "Deterministic TF-IDF cosine";
-
-export const embeddingLabel = (value) =>
-  EMBEDDING_OPTIONS.find((option) => option.value === value)?.label || value || "Local keyword vector · 384d";
+export const modelLabel = (value) =>
+  MODEL_OPTIONS.find((option) => option.value === value)?.label ||
+  (value === "tfidf-cosine" ? "Legacy local TF-IDF" : value || "Legacy local");
 
 /** Merges a stored configuration record over the defaults, ignoring empty cells. */
 export function normaliseConfig(record) {
@@ -35,5 +28,13 @@ export function normaliseConfig(record) {
   const stored = Object.fromEntries(
     Object.entries(record).filter(([, value]) => value !== undefined && value !== null && value !== ""),
   );
-  return { ...MATCHING_DEFAULTS, ...stored, id: record.id };
+  delete stored.embedding_model;
+  delete stored.embedding_dimensions;
+  return {
+    ...MATCHING_DEFAULTS,
+    ...stored,
+    provider: "gemini",
+    model: GEMINI_MODEL,
+    id: record.id,
+  };
 }

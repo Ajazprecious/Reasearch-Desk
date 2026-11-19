@@ -4,15 +4,15 @@ export function WeightsCard({ config, set }) {
   return (
     <section className="rounded-2xl border border-slate-200/70 bg-white">
       <div className="border-b border-slate-100 px-5 py-4">
-        <p className="text-[14px] font-semibold text-[#0A1929]">Similarity weights</p>
+        <p className="text-[14px] font-semibold text-[#0A1929]">Match weights</p>
         <p className="mt-0.5 text-[12px] text-slate-500">
-          How TF-IDF similarity, shared keywords and remaining supervisor capacity combine into each match percentage.
+          How Gemini relevance, local keyword similarity, and remaining supervisor capacity combine into each score.
         </p>
       </div>
       <div className="space-y-5 px-5 py-5">
         <WeightRow
-          label="TF-IDF similarity weight"
-          description={`Cosine similarity carries this share; shared keyword overlap and capacity carry the remainder.`}
+          label="Gemini relevance weight"
+          description="How much Gemini's semantic research-fit score contributes to the final recommendation."
           value={Number(config.similarity_weight)}
           onChange={(value) => set({ similarity_weight: value })}
         />

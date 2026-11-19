@@ -24,7 +24,8 @@ New students and supervisors can register with their institutional profile and a
 ## Local services and integrations
 
 - Email delivery, OTP verification, password-reset email, and Google/institutional OAuth require provider credentials and are not implemented. Registration and email/password sign-in work locally; the unavailable integrations are surfaced in the UI.
-- Supervisor suggestions use deterministic local TF-IDF cosine similarity and configured weights, with department and capacity eligibility enforced. Recommendations require administrator confirmation; no external AI service is called.
+- Gemini 3.8 Flash powers supervisor matching, the student writing assistant, supervisor draft-review suggestions, and on-demand administrator analytics. Set `GEMINI_API_KEY` in the API server's environment and restart the server; the key is never sent to the browser. For PowerShell, set `$env:GEMINI_API_KEY` before starting `npm.cmd start`.
+- Gemini calls are made only when a user requests an AI action. Matching sends research details and anonymized supervisor expertise; the student and supervisor assistants send the relevant writing/review context; analytics sends aggregate counts. Google processes that context for the request. Match eligibility, capacity rules, supervisor assignment, and final academic decisions remain local and human-controlled.
 - Data for the 15 workspace entities (users, research/supervisor profiles, assignments, milestones, drafts, feedback, notifications, matching configuration/history, recommendations, writing documents, defences, tickets, and ticket updates) is persisted in SQLite. The earlier workflow API state is retained in the same database.
 - This is a local prototype, not a production identity or file-hosting service.
 

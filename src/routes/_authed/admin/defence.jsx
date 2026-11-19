@@ -41,8 +41,8 @@ function AdminDefencePage() {
   return (
     <div className="animate-fade">
       <PageHeader
-        title="Defences & timeline"
-        description="Examination slots and the department timeline of deadlines ahead."
+        title="Timeline & Defences"
+        description="Monitor upcoming milestones and defence dates across postgraduate research projects."
         actions={
           <Button onClick={() => setOpen(true)} className="h-10 rounded-xl bg-[#00796B] px-4 text-[13px] font-medium hover:bg-[#007D6D]">
             <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" /> Schedule defence

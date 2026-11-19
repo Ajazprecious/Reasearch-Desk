@@ -53,14 +53,11 @@ function StudentOverview() {
     };
   }, [user?.email]);
 
-  const firstName = (user?.full_name || "").split(" ")[0];
-
   return (
     <div className="animate-fade">
       <PageHeader
-        eyebrow="My research"
-        title={firstName ? `Welcome back, ${firstName}` : "Research overview"}
-        description="Your supervision at a glance — matching status, chapter drafts and the next milestone due."
+        title="Dashboard"
+        description="Your research supervision at a glance."
         actions={
           <Button asChild className="h-10 rounded-xl bg-[#00796B] px-4 text-[13px] font-medium hover:bg-[#007D6D]">
             <Link to="/student/workspace/submit">
@@ -92,10 +89,48 @@ function StudentOverview() {
             </div>
           )}
 
+          {data?.profile && data.profile.status !== "draft" && (
+            <SectionCard
+              className="rounded-2xl"
+              bodyClassName="px-5 py-4 sm:px-6"
+            >
+              <div className="grid gap-5 lg:grid-cols-[1fr_280px] lg:items-center">
+                <div>
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#00796B]">Current research</p>
+                  <p className="mt-1 text-[16px] font-semibold text-[#0A1929]">
+                    {data.profile.title || "Postgraduate research project"}
+                  </p>
+                  <p className="mt-1 text-[12.5px] text-slate-500">
+                    Supervisor: {data.profile.supervisor_name || "Awaiting assignment"}
+                  </p>
+                  {data.next && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <StatusBadge status={data.next.status} label={data.next.status === "in_progress" ? "In progress" : data.next.status} />
+                      {data.next.status === "in_progress" && <StatusBadge status="under_review" label="Awaiting review" />}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-[12px] text-slate-500">
+                    <span>Overall progress</span>
+                    <span className="font-medium tabular-nums text-[#0A1929]">{data.progress}%</span>
+                  </div>
+                  <ProgressBar value={data.progress} />
+                  {data.next?.due_date && (
+                    <p className="mt-3 text-[12.5px] text-slate-500">
+                      Next target: <span className="font-medium text-[#0A1929]">{data.next.title}</span>
+                      <span className="text-slate-400"> · {formatDate(data.next.due_date)}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </SectionCard>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Overall progress" value={`${data?.progress || 0}%`} hint={`${data?.approved || 0} of ${data?.milestones?.length || 0} milestones complete`} icon={Flag} tone="teal" />
-            <StatCard label="Milestones" value={data?.milestones?.length || 0} hint={data?.next ? `Next: ${data.next.title}` : "All milestones complete"} icon={CalendarClock} tone="blue" />
-            <StatCard label="Needs revision" value={data?.revisions || 0} hint={data?.revisions ? "Feedback waiting on you" : "Nothing outstanding"} icon={Layers} tone={data?.revisions ? "rose" : "mint"} />
+            <StatCard label="Current milestone" value={data?.next?.title || "None"} hint={data?.next?.due_date ? `Due ${formatDate(data.next.due_date)}` : "No milestone pending"} icon={Flag} tone="teal" />
+            <StatCard label="Pending feedback" value={data?.revisions || 0} hint={data?.revisions ? "Feedback waiting on you" : "Nothing outstanding"} icon={Layers} tone={data?.revisions ? "rose" : "mint"} />
+            <StatCard label="Milestones complete" value={`${data?.approved || 0} of ${data?.milestones?.length || 0}`} hint={`${data?.progress || 0}% complete`} icon={CalendarClock} tone="blue" />
             <StatCard
               label="Next deadline"
               value={data?.next?.due_date ? formatDate(data.next.due_date) : "—"}

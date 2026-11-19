@@ -29,16 +29,14 @@ function AdminUsersPage() {
   const { data, loading, error } = useAsync(() => load(), []);
   const [role, setRole] = useState("all");
   const [query, setQuery] = useState(search.q || "");
+  const [faculty, setFaculty] = useState("all");
+  const [department, setDepartment] = useState("all");
 
   const people = data || [];
-  const counts = useMemo(
-    () => ({
-      all: people.length,
-      student: people.filter((person) => person.role === "student").length,
-      supervisor: people.filter((person) => person.role === "supervisor").length,
-      admin: people.filter((person) => person.role === "admin").length,
-    }),
-    [people],
+  const faculties = useMemo(() => [...new Set(people.map((person) => person.faculty).filter(Boolean))].sort(), [people]);
+  const departments = useMemo(
+    () => [...new Set(people.filter((person) => faculty === "all" || person.faculty === faculty).map((person) => person.department).filter(Boolean))].sort(),
+    [people, faculty],
   );
   const visible = people.filter((person) => {
     const matchesRole = role === "all" || person.role === role;
@@ -46,19 +44,21 @@ function AdminUsersPage() {
     const matchesQuery =
       !needle ||
       [person.full_name, person.email, person.department].filter(Boolean).some((value) => String(value).toLowerCase().includes(needle));
-    return matchesRole && matchesQuery;
+    return matchesRole && matchesQuery &&
+      (faculty === "all" || person.faculty === faculty) &&
+      (department === "all" || person.department === department);
   });
 
   return (
     <div className="animate-fade">
-      <PageHeader title="People" description="Students, supervisors and administrators by faculty and department." />
+      <PageHeader title="Users" description="Manage students, supervisors and administrators by faculty and department." />
 
       {loading ? (
         <LoadingBlock rows={5} />
       ) : error ? (
         <EmptyState icon={AlertTriangle} title="Could not load the directory" description={error.message} />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             {["all", "student", "supervisor", "admin"].map((option) => (
               <button
@@ -68,22 +68,39 @@ function AdminUsersPage() {
                 className={cn(
                   "h-9 rounded-xl border px-3.5 text-[12.5px] font-medium transition-colors",
                   role === option
-                    ? "border-[#00796B] bg-[#00796B]/[0.07] text-[#00574C]"
+                    ? "border-[#00796B] bg-[#00796B] text-white"
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
                 )}
               >
-                {option === "all" ? "Everyone" : ROLE_LABEL[option]} · {counts[option]}
+                {option === "all" ? "All users" : option === "admin" ? "Administrators" : `${ROLE_LABEL[option]}s`}
               </button>
             ))}
-            <div className="relative ml-auto">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr]">
+            <label className="relative block">
+              <span className="mb-1 block text-[10.5px] font-medium text-slate-500">Search</span>
+              <Search className="absolute left-3 top-8 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search name, email or department"
-                className="h-10 w-full min-w-[240px] rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-[13px] text-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00796B]"
+                className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[12px] text-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#00796B]"
               />
-            </div>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[10.5px] font-medium text-slate-500">Faculty / School</span>
+              <select value={faculty} onChange={(event) => { setFaculty(event.target.value); setDepartment("all"); }} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#00796B]">
+                <option value="all">All faculties</option>
+                {faculties.map((name) => <option key={name}>{name}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[10.5px] font-medium text-slate-500">Department</span>
+              <select value={department} onChange={(event) => setDepartment(event.target.value)} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#00796B]">
+                <option value="all">All departments</option>
+                {departments.map((name) => <option key={name}>{name}</option>)}
+              </select>
+            </label>
           </div>
 
           <SectionCard title="Directory" description={`${visible.length} record(s)`} bodyClassName="px-5 py-3 sm:px-6">

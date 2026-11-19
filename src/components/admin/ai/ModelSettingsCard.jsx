@@ -1,5 +1,5 @@
 import { Switch } from "@/components/ui/switch";
-import { EMBEDDING_OPTIONS, MODEL_OPTIONS } from "@/lib/matching-config";
+import { MODEL_OPTIONS } from "@/lib/matching-config";
 import { WeightRow } from "@/components/admin/ai/WeightRow";
 
 const selectClass =
@@ -18,39 +18,24 @@ function ToggleRow({ label, description, checked, onChange }) {
 }
 
 export function ModelSettingsCard({ config, set }) {
-  const onIndexChange = (value) => {
-    const option = EMBEDDING_OPTIONS.find((entry) => entry.value === value);
-    set({ embedding_model: value, embedding_dimensions: option?.dimensions || config.embedding_dimensions });
-  };
-
   return (
     <section className="rounded-2xl border border-slate-200/70 bg-white">
       <div className="border-b border-slate-100 px-5 py-4">
         <p className="text-[14px] font-semibold text-[#0A1929]">Matching configuration</p>
-        <p className="mt-0.5 text-[12px] text-slate-500">Local deterministic matching ranks eligible supervisors using research-profile similarity.</p>
+        <p className="mt-0.5 text-[12px] text-slate-500">
+          Gemini ranks research relevance; local rules enforce department, level, and supervisor-capacity eligibility.
+        </p>
       </div>
       <div className="px-5 py-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="mb-1.5 block text-[12px] font-medium text-slate-600">Matching provider</span>
-            <select value={config.provider} onChange={(event) => set({ provider: event.target.value })} className={selectClass}>
-              <option value="local">Local matching engine</option>
-            </select>
+            <span className={`${selectClass} flex items-center`}>Google Gemini API</span>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[12px] font-medium text-slate-600">Scoring method</span>
-            <select value={config.model} onChange={(event) => set({ model: event.target.value })} className={selectClass}>
+            <span className="mb-1.5 block text-[12px] font-medium text-slate-600">Gemini model</span>
+            <select value={config.model} disabled className={`${selectClass} disabled:cursor-not-allowed disabled:bg-slate-50`}>
               {MODEL_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-[12px] font-medium text-slate-600">Local matching index</span>
-            <select value={config.embedding_model} onChange={(event) => onIndexChange(event.target.value)} className={selectClass}>
-              {EMBEDDING_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -75,8 +60,8 @@ export function ModelSettingsCard({ config, set }) {
 
         <div className="mt-4 divide-y divide-slate-100">
           <ToggleRow
-            label="Enable local matching"
-            description="Use deterministic TF-IDF cosine similarity and configured department and capacity rules."
+            label="Enable Gemini matching"
+            description="Use Gemini for semantic research fit, then apply local department, level, and capacity checks."
             checked={config.engine_enabled}
             onChange={(value) => set({ engine_enabled: value })}
           />
@@ -85,7 +70,7 @@ export function ModelSettingsCard({ config, set }) {
         <div className="mt-4">
           <WeightRow
             label="Minimum match threshold"
-            description="Suggestions scoring below this are dropped from the shortlist."
+            description="Suggestions below this combined Gemini, keyword, and capacity score are dropped from the shortlist."
             value={Number(config.min_score) / 100}
             max={0.9}
             step={0.05}

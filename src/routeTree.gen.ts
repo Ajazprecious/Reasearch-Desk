@@ -29,8 +29,10 @@ import { Route as AuthedAdminAssignmentsRouteImport } from './routes/_authed/adm
 import { Route as AuthedAdminDefenceRouteImport } from './routes/_authed/admin/defence'
 import { Route as AuthedAdminProgressRouteImport } from './routes/_authed/admin/progress'
 import { Route as AuthedAdminRecommendationsRouteImport } from './routes/_authed/admin/recommendations'
+import { Route as AuthedAdminRecordsRouteImport } from './routes/_authed/admin/records'
 import { Route as AuthedAdminReportsRouteImport } from './routes/_authed/admin/reports'
 import { Route as AuthedAdminUsersRouteImport } from './routes/_authed/admin/users'
+import { Route as AuthedAdminWorkloadRouteImport } from './routes/_authed/admin/workload'
 import { Route as AuthedStudentIndexRouteImport } from './routes/_authed/student/index'
 import { Route as AuthedStudentDefenceRouteImport } from './routes/_authed/student/defence'
 import { Route as AuthedStudentDraftsRouteImport } from './routes/_authed/student/drafts'
@@ -160,6 +162,11 @@ const AuthedAdminRecommendationsRoute =
     path: '/recommendations',
     getParentRoute: () => AuthedAdminRoute,
   } as any)
+const AuthedAdminRecordsRoute = AuthedAdminRecordsRouteImport.update({
+  id: '/records',
+  path: '/records',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
 const AuthedAdminReportsRoute = AuthedAdminReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -168,6 +175,11 @@ const AuthedAdminReportsRoute = AuthedAdminReportsRouteImport.update({
 const AuthedAdminUsersRoute = AuthedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedAdminWorkloadRoute = AuthedAdminWorkloadRouteImport.update({
+  id: '/workload',
+  path: '/workload',
   getParentRoute: () => AuthedAdminRoute,
 } as any)
 const AuthedStudentIndexRoute = AuthedStudentIndexRouteImport.update({
@@ -347,8 +359,10 @@ export interface FileRoutesByFullPath {
   '/admin/defence': typeof AuthedAdminDefenceRoute
   '/admin/progress': typeof AuthedAdminProgressRoute
   '/admin/recommendations': typeof AuthedAdminRecommendationsRoute
+  '/admin/records': typeof AuthedAdminRecordsRoute
   '/admin/reports': typeof AuthedAdminReportsRoute
   '/admin/users': typeof AuthedAdminUsersRoute
+  '/admin/workload': typeof AuthedAdminWorkloadRoute
   '/student/defence': typeof AuthedStudentDefenceRoute
   '/student/drafts': typeof AuthedStudentDraftsRoute
   '/student/milestones': typeof AuthedStudentMilestonesRoute
@@ -395,8 +409,10 @@ export interface FileRoutesByTo {
   '/admin/defence': typeof AuthedAdminDefenceRoute
   '/admin/progress': typeof AuthedAdminProgressRoute
   '/admin/recommendations': typeof AuthedAdminRecommendationsRoute
+  '/admin/records': typeof AuthedAdminRecordsRoute
   '/admin/reports': typeof AuthedAdminReportsRoute
   '/admin/users': typeof AuthedAdminUsersRoute
+  '/admin/workload': typeof AuthedAdminWorkloadRoute
   '/student/defence': typeof AuthedStudentDefenceRoute
   '/student/drafts': typeof AuthedStudentDraftsRoute
   '/student/milestones': typeof AuthedStudentMilestonesRoute
@@ -447,8 +463,10 @@ export interface FileRoutesById {
   '/_authed/admin/defence': typeof AuthedAdminDefenceRoute
   '/_authed/admin/progress': typeof AuthedAdminProgressRoute
   '/_authed/admin/recommendations': typeof AuthedAdminRecommendationsRoute
+  '/_authed/admin/records': typeof AuthedAdminRecordsRoute
   '/_authed/admin/reports': typeof AuthedAdminReportsRoute
   '/_authed/admin/users': typeof AuthedAdminUsersRoute
+  '/_authed/admin/workload': typeof AuthedAdminWorkloadRoute
   '/_authed/student/defence': typeof AuthedStudentDefenceRoute
   '/_authed/student/drafts': typeof AuthedStudentDraftsRoute
   '/_authed/student/milestones': typeof AuthedStudentMilestonesRoute
@@ -500,8 +518,10 @@ export interface FileRouteTypes {
     | '/admin/defence'
     | '/admin/progress'
     | '/admin/recommendations'
+    | '/admin/records'
     | '/admin/reports'
     | '/admin/users'
+    | '/admin/workload'
     | '/student/defence'
     | '/student/drafts'
     | '/student/milestones'
@@ -548,8 +568,10 @@ export interface FileRouteTypes {
     | '/admin/defence'
     | '/admin/progress'
     | '/admin/recommendations'
+    | '/admin/records'
     | '/admin/reports'
     | '/admin/users'
+    | '/admin/workload'
     | '/student/defence'
     | '/student/drafts'
     | '/student/milestones'
@@ -599,8 +621,10 @@ export interface FileRouteTypes {
     | '/_authed/admin/defence'
     | '/_authed/admin/progress'
     | '/_authed/admin/recommendations'
+    | '/_authed/admin/records'
     | '/_authed/admin/reports'
     | '/_authed/admin/users'
+    | '/_authed/admin/workload'
     | '/_authed/student/defence'
     | '/_authed/student/drafts'
     | '/_authed/student/milestones'
@@ -784,6 +808,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminRecommendationsRouteImport
       parentRoute: typeof AuthedAdminRoute
     }
+    '/_authed/admin/records': {
+      id: '/_authed/admin/records'
+      path: '/records'
+      fullPath: '/admin/records'
+      preLoaderRoute: typeof AuthedAdminRecordsRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
     '/_authed/admin/reports': {
       id: '/_authed/admin/reports'
       path: '/reports'
@@ -796,6 +827,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AuthedAdminUsersRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/admin/workload': {
+      id: '/_authed/admin/workload'
+      path: '/workload'
+      fullPath: '/admin/workload'
+      preLoaderRoute: typeof AuthedAdminWorkloadRouteImport
       parentRoute: typeof AuthedAdminRoute
     }
     '/_authed/student/': {
@@ -1003,8 +1041,10 @@ interface AuthedAdminRouteChildren {
   AuthedAdminDefenceRoute: typeof AuthedAdminDefenceRoute
   AuthedAdminProgressRoute: typeof AuthedAdminProgressRoute
   AuthedAdminRecommendationsRoute: typeof AuthedAdminRecommendationsRoute
+  AuthedAdminRecordsRoute: typeof AuthedAdminRecordsRoute
   AuthedAdminReportsRoute: typeof AuthedAdminReportsRoute
   AuthedAdminUsersRoute: typeof AuthedAdminUsersRoute
+  AuthedAdminWorkloadRoute: typeof AuthedAdminWorkloadRoute
   AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
   AuthedAdminTicketsTicketIdRoute: typeof AuthedAdminTicketsTicketIdRoute
   AuthedAdminTicketsIndexRoute: typeof AuthedAdminTicketsIndexRoute
@@ -1016,8 +1056,10 @@ const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
   AuthedAdminDefenceRoute: AuthedAdminDefenceRoute,
   AuthedAdminProgressRoute: AuthedAdminProgressRoute,
   AuthedAdminRecommendationsRoute: AuthedAdminRecommendationsRoute,
+  AuthedAdminRecordsRoute: AuthedAdminRecordsRoute,
   AuthedAdminReportsRoute: AuthedAdminReportsRoute,
   AuthedAdminUsersRoute: AuthedAdminUsersRoute,
+  AuthedAdminWorkloadRoute: AuthedAdminWorkloadRoute,
   AuthedAdminIndexRoute: AuthedAdminIndexRoute,
   AuthedAdminTicketsTicketIdRoute: AuthedAdminTicketsTicketIdRoute,
   AuthedAdminTicketsIndexRoute: AuthedAdminTicketsIndexRoute,

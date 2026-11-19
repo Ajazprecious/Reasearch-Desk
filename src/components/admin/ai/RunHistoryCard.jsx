@@ -27,8 +27,9 @@ export function RunHistoryCard({ runs }) {
                 <span className="text-[11px] text-slate-400">{timeAgo(run.created_date)}</span>
               </div>
               <p className="mt-1 text-[11.5px] text-slate-500">
-                {modelLabel(run.model)} · deterministic local ranking · {run.confidence || 0}% average top
-                match
+                {run.model ? modelLabel(run.model) : "Legacy local"} ·{" "}
+                {run.used_ai ? "Gemini semantic ranking with local eligibility" : "Legacy local ranking"} ·{" "}
+                {run.confidence || 0}% average top match
               </p>
               <p className="mt-0.5 truncate text-[11px] text-slate-400">
                 {run.scope === "student" ? "Single student" : "All waiting profiles"} · {run.triggered_by}

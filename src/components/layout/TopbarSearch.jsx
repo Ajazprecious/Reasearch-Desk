@@ -5,7 +5,7 @@ import { ArrowRight, Search } from "lucide-react";
 // Where a typed name goes in each workspace.
 const PEOPLE_TARGET = {
   supervisor: { to: "/supervisor/students", label: "students" },
-  admin: { to: "/admin/users", label: "people" },
+  admin: { to: "/admin/users", label: "students, supervisors, and administrators" },
 };
 
 /** Topbar search: jumps to a workspace screen, and searches people in the admin and supervisor portals. */
@@ -59,7 +59,7 @@ export function TopbarSearch({ role, nav = [] }) {
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 140)}
-        placeholder={PEOPLE_TARGET[role] ? "Search students, pages…" : "Search your workspace…"}
+        placeholder={role === "admin" ? "Search students, supervisors, projects…" : PEOPLE_TARGET[role] ? "Search students, pages…" : "Search workspace…"}
         aria-label="Search the workspace"
         className="h-10 w-full rounded-xl border border-slate-200 bg-[#FBFCFC] pl-9 pr-3 text-[13px] text-[#0A1929] outline-none transition-colors placeholder:text-slate-400 focus:border-[#00796B]/50 focus:bg-white focus:ring-2 focus:ring-[#00796B]/10"
       />

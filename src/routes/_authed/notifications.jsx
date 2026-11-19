@@ -27,6 +27,7 @@ const ACTION_LABEL = {
 };
 
 const TABS = ["all", "unread", "reviews", "milestones", "assignments"];
+const ADMIN_TABS = ["all", "unread", "assignments", "tickets", "progress", "defences"];
 
 function matches(item, filter) {
   if (filter === "all") return true;
@@ -34,11 +35,15 @@ function matches(item, filter) {
   if (filter === "reviews") return item.type === "submission" || item.type === "feedback";
   if (filter === "milestones") return item.type === "milestone";
   if (filter === "assignments") return item.type === "assignment";
+  if (filter === "tickets") return item.type === "ticket" || `${item.title} ${item.message}`.toLowerCase().includes("ticket");
+  if (filter === "progress") return item.type === "progress" || `${item.title} ${item.message}`.toLowerCase().includes("progress");
+  if (filter === "defences") return item.type === "defence" || `${item.title} ${item.message}`.toLowerCase().includes("defence");
   return true;
 }
 
 function NotificationsPage() {
   const { user } = useAuth();
+  const isAdmin = resolveRole(user) === "admin";
   const [filter, setFilter] = useState("all");
 
   const { data, loading, reload } = useAsync(async () => {
@@ -50,13 +55,8 @@ function NotificationsPage() {
   const unread = items.filter((item) => !item.is_read);
   const visible = items.filter((item) => matches(item, filter));
 
-  const counts = {
-    all: items.length,
-    unread: unread.length,
-    reviews: items.filter((item) => matches(item, "reviews")).length,
-    milestones: items.filter((item) => matches(item, "milestones")).length,
-    assignments: items.filter((item) => matches(item, "assignments")).length,
-  };
+  const tabs = isAdmin ? ADMIN_TABS : TABS;
+  const counts = Object.fromEntries(tabs.map((tab) => [tab, items.filter((item) => matches(item, tab)).length]));
 
   async function markAll() {
     await localClient.entities.Notification.updateMany({ user_email: user.email, is_read: false }, { $set: { is_read: true } });
@@ -75,7 +75,9 @@ function NotificationsPage() {
         <PageHeader
           eyebrow="Activity"
           title="Notifications"
-          description="Updates about submissions, student replies, milestones, assignments and supervision activity."
+          description={isAdmin
+            ? "Administrative updates about assignments, capacity, tickets, progress exceptions and defence activity."
+            : "Updates about submissions, student replies, milestones, assignments and supervision activity."}
           actions={
             unread.length > 0 && (
               <Button onClick={markAll} variant="outline" className="h-10 rounded-xl border-slate-200 text-[13px] font-medium text-slate-600">
@@ -89,9 +91,9 @@ function NotificationsPage() {
           className="mb-4"
           value={filter}
           onChange={setFilter}
-          options={TABS.map((tab) => ({
+          options={tabs.map((tab) => ({
             key: tab,
-            label: tab === "all" ? "All" : tab === "reviews" ? "Reviews" : tab.charAt(0).toUpperCase() + tab.slice(1),
+            label: tab === "all" ? "All" : tab === "reviews" ? "Reviews" : tab === "defences" ? "Defences" : tab.charAt(0).toUpperCase() + tab.slice(1),
             count: counts[tab],
           }))}
         />
@@ -99,13 +101,14 @@ function NotificationsPage() {
         {loading ? (
           <LoadingBlock rows={4} />
         ) : visible.length ? (
-          <div className="space-y-2.5">
+          <div className={isAdmin ? "divide-y divide-slate-100 rounded-2xl border border-slate-200/70 bg-white px-5" : "space-y-2.5"}>
             {visible.map((item) => (
               <article
                 key={item.id}
                 className={cn(
-                  "flex flex-col gap-2 rounded-xl border bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between",
-                  item.is_read ? "border-slate-200" : "border-[#C8E6E3]",
+                  "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between",
+                  isAdmin ? "py-4" : "rounded-xl border bg-white px-4 py-3.5",
+                  !isAdmin && (item.is_read ? "border-slate-200" : "border-[#C8E6E3]"),
                 )}
               >
                 <div className="min-w-0">
@@ -122,6 +125,11 @@ function NotificationsPage() {
                   >
                     {item.is_read ? "Read" : "Unread"}
                   </span>
+                  {isAdmin && (
+                    <span className="rounded-full bg-[#EFF4FF] px-2.5 py-1 text-[10.5px] font-medium text-[#5275A5]">
+                      {item.type === "assignment" ? "Assignments" : item.type === "ticket" ? "Tickets" : item.type === "defence" ? "Defences" : item.type === "progress" ? "Progress" : item.type}
+                    </span>
+                  )}
                   {item.link ? (
                     <a
                       href={item.link}

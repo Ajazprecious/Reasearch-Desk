@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { formatDateTime } from "@/lib/format";
 
 /** Topbar notification bell: unread counter, latest six events and a link to the centre. */
-export function NotificationBell({ withLabel = false }) {
+export function NotificationBell({ withLabel = false, showUnread = true }) {
   const { user } = useAuth();
   const { data, reload } = useAsync(async () => {
     if (!user?.email) return { items: [], unread: 0 };
@@ -48,7 +48,7 @@ export function NotificationBell({ withLabel = false }) {
         >
           <Bell className="h-[17px] w-[17px]" aria-hidden="true" />
           {withLabel && <span className="hidden sm:inline">Notifications</span>}
-          {unread > 0 &&
+          {showUnread && unread > 0 &&
             (withLabel ? (
               <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#C62828] px-1 text-[10.5px] font-semibold text-white">
                 {unread > 9 ? "9+" : unread}

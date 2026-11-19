@@ -14,12 +14,20 @@ export function useNavBadges(role) {
     }
     let active = true;
     Promise.all([
-      localClient.entities.Notification.count({ user_email: user.email, is_read: false }).catch(() => 0),
+      role === "admin"
+        ? localClient.entities.Recommendation.count({ status: "pending" }).catch(() => 0)
+        : localClient.entities.Notification.count({ user_email: user.email, is_read: false }).catch(() => 0),
       role === "supervisor"
         ? localClient.entities.Draft.count({ supervisor_email: user.email, status: "submitted" }).catch(() => 0)
         : Promise.resolve(0),
-    ]).then(([notifications, reviews]) => {
-      if (active) setBadges({ notifications, reviews });
+      role === "admin"
+        ? Promise.all([
+            localClient.entities.Ticket.count({ status: "open" }).catch(() => 0),
+            localClient.entities.Ticket.count({ status: "in_review" }).catch(() => 0),
+          ]).then(([open, review]) => open + review)
+        : Promise.resolve(0),
+    ]).then(([notifications, reviews, tickets]) => {
+      if (active) setBadges({ notifications, reviews, recommendations: role === "admin" ? notifications : 0, tickets });
     });
     return () => {
       active = false;

@@ -8,14 +8,13 @@ import { SectionCard } from "@/components/workspace/SectionCard";
 import { TintedStat } from "@/components/workspace/TintedStat";
 import { EmptyState, LoadingBlock } from "@/components/workspace/EmptyState";
 import { AdminTicketRow } from "@/components/admin/tickets/AdminTicketRow";
-import { cn } from "@/lib/utils";
+import { timeAgo } from "@/lib/format";
 
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "open", label: "Open" },
   { key: "in_review", label: "In review" },
   { key: "resolved", label: "Resolved" },
-  { key: "high", label: "High impact" },
 ];
 
 export const Route = createFileRoute("/_authed/admin/tickets/")({
@@ -26,6 +25,7 @@ export const Route = createFileRoute("/_authed/admin/tickets/")({
 function AdminTicketsPage() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
 
   const { data, loading, error, reload } = useAsync(async () => {
     const [ticketPage, updatePage] = await Promise.all([
@@ -42,12 +42,15 @@ function AdminTicketsPage() {
     open: tickets.filter((ticket) => ticket.status === "open").length,
     inReview: tickets.filter((ticket) => ticket.status === "in_review").length,
     resolved: tickets.filter((ticket) => ticket.status === "resolved").length,
-    high: tickets.filter((ticket) => ticket.impact === "High").length,
   };
+  const categories = [...new Set(tickets.map((ticket) => ticket.category).filter(Boolean))].sort();
+  const oldestOpen = tickets
+    .filter((ticket) => ticket.status !== "resolved")
+    .sort((a, b) => String(a.created_date || "").localeCompare(String(b.created_date || "")))[0];
 
   const visible = tickets.filter((ticket) => {
-    if (filter === "high" && ticket.impact !== "High") return false;
     if (["open", "in_review", "resolved"].includes(filter) && ticket.status !== filter) return false;
+    if (category !== "all" && ticket.category !== category) return false;
     const haystack = `${ticket.reference} ${ticket.category} ${ticket.student_name} ${ticket.student_email} ${ticket.send_to}`.toLowerCase();
     return haystack.includes(query.trim().toLowerCase());
   });
@@ -55,8 +58,8 @@ function AdminTicketsPage() {
   return (
     <div className="animate-fade">
       <PageHeader
-        title="Reports & tickets"
-        description="Student reports about delays, records and uploads. Respond, move each ticket through review and close it with a clear record."
+        title="Reports & Tickets"
+        description="Review issues raised by students and route each ticket to the appropriate administrator or school team."
         actions={
           <button
             type="button"
@@ -75,41 +78,35 @@ function AdminTicketsPage() {
       ) : (
         <div className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <TintedStat label="Open tickets" value={counts.open} hint="Waiting for a first response" tone="cream" />
+            <TintedStat label="Open" value={counts.open} hint="Awaiting administrative action" tone="blue" />
             <TintedStat label="In review" value={counts.inReview} hint="Being investigated" tone="blue" />
             <TintedStat label="Resolved" value={counts.resolved} hint="Closed with a response" tone="mint" />
-            <TintedStat label="High impact" value={counts.high} hint="Affecting progress right now" tone="rose" />
+            <TintedStat label="Oldest open" value={oldestOpen ? timeAgo(oldestOpen.created_date) : "—"} hint="Needs a response" tone="rose" />
           </div>
 
-          <SectionCard title="Ticket queue" description={`${counts.total} tickets reported by students.`} bodyClassName="px-5 py-4 sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap gap-1.5">
-                {FILTERS.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => setFilter(item.key)}
-                    className={cn(
-                      "rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors",
-                      filter === item.key ? "bg-[#00796B] text-white" : "bg-[#F1F3F4] text-slate-600 hover:bg-slate-200",
-                    )}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-                <Search className="h-4 w-4 text-slate-400" aria-hidden="true" />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search tickets or students..."
-                  className="w-full bg-transparent text-[12.5px] text-[#0A1929] outline-none placeholder:text-slate-400 sm:w-56"
-                />
-              </div>
-            </div>
+          <div className="grid gap-2 sm:grid-cols-[1.4fr_1fr_1fr]">
+            <label className="relative block">
+              <span className="mb-1 block text-[10.5px] font-medium text-slate-500">Search</span>
+              <Search className="absolute left-3 top-8 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ticket, student or issue…" className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[12px] outline-none focus:border-[#00796B]" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[10.5px] font-medium text-slate-500">Category</span>
+              <select value={category} onChange={(event) => setCategory(event.target.value)} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[12px] outline-none focus:border-[#00796B]">
+                <option value="all">All categories</option>
+                {categories.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[10.5px] font-medium text-slate-500">Status</span>
+              <select value={filter} onChange={(event) => setFilter(event.target.value)} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[12px] outline-none focus:border-[#00796B]">
+                {FILTERS.map((item) => <option key={item.key} value={item.key}>{item.key === "all" ? "All statuses" : item.label}</option>)}
+              </select>
+            </label>
+          </div>
 
-            <div className="mt-2 divide-y divide-slate-100">
+          <SectionCard title="Ticket queue" description={`${visible.length} of ${counts.total} tickets`} bodyClassName="px-5 py-2 sm:px-6">
+            <div className="divide-y divide-slate-100">
               {visible.length ? (
                 visible.map((ticket) => (
                   <AdminTicketRow

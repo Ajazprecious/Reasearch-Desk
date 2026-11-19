@@ -52,8 +52,8 @@ function AdminRecommendationsPage() {
   return (
     <div className="animate-fade">
       <PageHeader
-        title="Supervisor matches"
-        description="Ranked suggestions from the recommendation engine. Review expertise and workload, then confirm the assignment."
+        title="Supervisor Recommendations"
+        description="Review students department by department. The department defines the eligible supervisor pool before research relevance is ranked."
         actions={
           <Button onClick={match} disabled={matching} className="h-10 rounded-xl bg-[#00796B] px-4 text-[13px] font-medium hover:bg-[#007D6D]">
             <Sparkles className="mr-1.5 h-4 w-4" aria-hidden="true" />
@@ -67,7 +67,17 @@ function AdminRecommendationsPage() {
       ) : error ? (
         <EmptyState icon={AlertTriangle} title="Could not load the queue" description={error.message} />
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/70 bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[13px] font-semibold text-[#22343A]">Department boundary applied before AI matching</p>
+              <p className="mt-1 max-w-3xl text-[11.5px] leading-relaxed text-slate-500">
+                The system limits candidates to supervisors in the student's department, then checks availability and supervision capacity before ranking relevance.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-[#E8F5E9] px-2.5 py-1 text-[10.5px] font-medium text-[#367C55]">Required</span>
+          </div>
+          <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           <div className="space-y-5">
             {!awaiting.length && (
               <EmptyState
@@ -205,10 +215,11 @@ function AdminRecommendationsPage() {
             ) : (
               <EmptyState icon={Users} title="No supervisors" description="Supervisor profiles appear once they complete their expertise setup." />
             )}
-            <Link to="/admin/assignments" className="mt-4 inline-flex text-[12.5px] font-medium text-[#00796B] hover:underline">
-              Supervision records →
+            <Link to="/admin/workload" className="mt-4 inline-flex text-[12.5px] font-medium text-[#00796B] hover:underline">
+              Supervisor workload →
             </Link>
           </SectionCard>
+        </div>
         </div>
       )}
 

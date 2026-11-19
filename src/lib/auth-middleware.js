@@ -61,7 +61,9 @@ const withWorkspace = (next, request) => {
 
 export const authMiddleware = createMiddleware({ type: "function" })
   .client(async ({ next }) => {
-    const token = typeof window === "undefined" ? "" : window.localStorage.getItem("researchdesk_session");
+    const token = typeof window === "undefined"
+      ? ""
+      : window.localStorage.getItem("researchdesk_session") || window.sessionStorage.getItem("researchdesk_session");
     return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
   })
   .server(({ next }) => withWorkspace(next, getRequest()));

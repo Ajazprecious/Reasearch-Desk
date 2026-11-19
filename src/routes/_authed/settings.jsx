@@ -9,6 +9,8 @@ import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import { resolveRole } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import {
+  ADMIN_DEFAULT_SETTINGS,
+  AdminSettingsSections,
   DEFAULT_SETTINGS,
   GeneralSection,
   NotificationsSection,
@@ -31,8 +33,10 @@ export const Route = createFileRoute("/_authed/settings")({
 
 function SettingsPage() {
   const { user, refresh, logout } = useAuth();
+  const isAdmin = resolveRole(user) === "admin";
+  const defaults = isAdmin ? { ...DEFAULT_SETTINGS, ...ADMIN_DEFAULT_SETTINGS } : DEFAULT_SETTINGS;
   const [tab, setTab] = useState("general");
-  const [prefs, setPrefs] = useState({ ...DEFAULT_SETTINGS, ...(user?.settings || {}) });
+  const [prefs, setPrefs] = useState({ ...defaults, ...(user?.settings || {}) });
   const [busy, setBusy] = useState(false);
 
   const { data: profile } = useAsync(async () => {
@@ -42,8 +46,8 @@ function SettingsPage() {
   }, [user?.email]);
 
   useEffect(() => {
-    setPrefs({ ...DEFAULT_SETTINGS, ...(user?.settings || {}) });
-  }, [user?.id]);
+    setPrefs({ ...defaults, ...(user?.settings || {}) });
+  }, [user?.id, isAdmin]);
 
   const set = (patch) => setPrefs((current) => ({ ...current, ...patch }));
 
@@ -64,12 +68,14 @@ function SettingsPage() {
     <WorkspaceLayout role={resolveRole(user) || "student"}>
     <div className="animate-fade">
       <PageHeader
-        eyebrow="Account"
+        eyebrow={isAdmin ? undefined : "Account"}
         title="Settings"
-        description="Manage account preferences, research notifications, document behaviour and security."
+        description={isAdmin
+          ? "Manage assignment rules, administrative notifications, ticket handling and account security."
+          : "Manage account preferences, research notifications, document behaviour and security."}
       />
 
-      <nav className="mb-5 flex flex-wrap items-center gap-1.5 border-b border-slate-200 pb-3" aria-label="Settings sections">
+      {!isAdmin && <nav className="mb-5 flex flex-wrap items-center gap-1.5 border-b border-slate-200 pb-3" aria-label="Settings sections">
         {TABS.map((item) => (
           <button
             key={item.key}
@@ -84,13 +90,18 @@ function SettingsPage() {
             {item.label}
           </button>
         ))}
-      </nav>
+      </nav>}
 
-      <div className="max-w-3xl space-y-5">
+      <div className={isAdmin ? "space-y-4" : "max-w-3xl space-y-5"}>
+        {isAdmin && <AdminSettingsSections user={user} prefs={prefs} set={set} onSignOut={logout} />}
+        {!isAdmin && (
+        <>
         {tab === "general" && <GeneralSection user={user} profile={profile} prefs={prefs} set={set} />}
         {tab === "notifications" && <NotificationsSection prefs={prefs} set={set} />}
         {tab === "writing" && <WritingSection prefs={prefs} set={set} />}
         {tab === "security" && <SecuritySection lastChanged="42 days ago" onSignOut={logout} />}
+        </>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Button onClick={save} disabled={busy} className="h-10 rounded-xl bg-[#00796B] px-4 text-[13px] font-medium hover:bg-[#007D6D]">
@@ -99,7 +110,7 @@ function SettingsPage() {
           <Button
             variant="outline"
             onClick={() => {
-              setPrefs(DEFAULT_SETTINGS);
+              setPrefs({ ...defaults });
               toast.message("Defaults restored — save to apply");
             }}
             className="h-10 rounded-xl border-slate-200 text-[13px]"

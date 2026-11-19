@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 import { useAsync } from "@/hooks/useAsync";
 import { getDraftReview } from "@/lib/supervisor-fns";
+import { getDraftReviewSuggestions } from "@/lib/ai-fns";
 import { reviewDraft } from "@/lib/server-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,12 +31,16 @@ function FeedbackDecisionPage() {
   const { user } = useAuth();
   const load = useServerFn(getDraftReview);
   const submit = useServerFn(reviewDraft);
+  const getSuggestions = useServerFn(getDraftReviewSuggestions);
   const { data, loading, reload } = useAsync(() => load({ data: { draftId } }), [draftId, user?.email]);
 
   const [outcome, setOutcome] = useState(search.outcome);
   const [comments, setComments] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [saving, setSaving] = useState(false);
+  const [gettingSuggestions, setGettingSuggestions] = useState(false);
+  const [suggestionError, setSuggestionError] = useState("");
+  const [suggestions, setSuggestions] = useState(null);
 
   if (loading) return <LoadingBlock rows={6} />;
   if (!data?.draft) {
@@ -43,6 +48,18 @@ function FeedbackDecisionPage() {
   }
 
   const { draft, versions, history } = data;
+
+  async function requestSuggestions() {
+    setGettingSuggestions(true);
+    setSuggestionError("");
+    try {
+      setSuggestions(await getSuggestions({ data: { draftId } }));
+    } catch (error) {
+      setSuggestionError(error?.message || "Gemini could not review this draft right now.");
+    } finally {
+      setGettingSuggestions(false);
+    }
+  }
 
   async function send(event) {
     event.preventDefault();
@@ -154,6 +171,50 @@ function FeedbackDecisionPage() {
         </div>
 
         <div className="space-y-3">
+          <SideCard
+            title="Gemini review assistant"
+            description="Draft text and research context are sent to Gemini for suggestions; you make the final decision."
+          >
+            <Button
+              type="button"
+              onClick={requestSuggestions}
+              disabled={gettingSuggestions}
+              className="h-9 w-full rounded-lg bg-[#00796B] text-[12px] font-medium hover:bg-[#007D6D]"
+            >
+              {gettingSuggestions ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" /> : <Sparkles className="mr-1.5 h-4 w-4" aria-hidden="true" />}
+              {gettingSuggestions ? "Reviewing…" : "Get Gemini suggestions"}
+            </Button>
+            {suggestionError && <p role="alert" className="mt-2 text-[11.5px] text-red-700">{suggestionError}</p>}
+            {suggestions && (
+              <div aria-live="polite" className="mt-3 space-y-3 text-[11.5px] leading-relaxed text-slate-600">
+                <p>{suggestions.overview}</p>
+                {suggestions.strengths.length > 0 && (
+                  <div>
+                    <p className="font-semibold text-[#0A1929]">Strengths to consider</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-4">{suggestions.strengths.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </div>
+                )}
+                {suggestions.areas_to_check.length > 0 && (
+                  <div>
+                    <p className="font-semibold text-[#0A1929]">Areas to check</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-4">{suggestions.areas_to_check.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </div>
+                )}
+                {suggestions.questions.length > 0 && (
+                  <div>
+                    <p className="font-semibold text-[#0A1929]">Questions to ask</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-4">{suggestions.questions.map((item) => <li key={item}>{item}</li>)}</ul>
+                  </div>
+                )}
+                {suggestions.feedback_draft && (
+                  <Button type="button" variant="outline" onClick={() => setComments(suggestions.feedback_draft)} className="h-8 w-full border-slate-300 text-[11.5px]">
+                    Use suggested feedback
+                  </Button>
+                )}
+              </div>
+            )}
+          </SideCard>
+
           <SideCard title="What happens next">
             <ol className="list-decimal space-y-1.5 pl-4 text-[11.5px] leading-snug text-slate-600">
               <li>{draft.student_name} receives your feedback notification.</li>

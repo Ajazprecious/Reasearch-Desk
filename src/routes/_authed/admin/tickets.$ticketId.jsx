@@ -81,8 +81,8 @@ function AdminTicketDetailPage() {
       </Link>
 
       <PageHeader
-        title="Response & decision"
-        description="Send structured feedback linked to this ticket and decide the next research action."
+        title={`Ticket #${ticket.reference}`}
+        description={`${ticket.category} · Submitted by ${ticket.student_name || ticket.student_email} · ${formatDateTime(ticket.created_date)}`}
         actions={<TicketStatusBadge status={ticket.status} />}
       />
 
