@@ -5,6 +5,16 @@ import { makePasswordHash } from "./auth.js";
 
 const STATE_FORMAT = "researchdesk-state";
 const STATE_VERSION = 1;
+const DEMO_USER_IDS = new Set(["usr-1", "usr-2", "usr-3", "usr-4", "usr-5", "usr-6", "usr-7"]);
+const DEMO_EMAILS = new Set([
+  "amara.nwosu@example.edu",
+  "amina.yusuf@example.edu",
+  "ibrahim.musa@example.edu",
+  "zainab.bello@example.edu",
+  "fatima.bello@example.edu",
+  "admin@example.edu",
+  "chidi.obi@example.edu",
+]);
 const ENTITY_NAMES = [
   "Assignment", "Defence", "Draft", "Feedback", "MatchingConfig", "MatchingRun", "Milestone",
   "Notification", "Recommendation", "ResearchProfile", "SupervisorProfile", "Ticket",
@@ -12,6 +22,7 @@ const ENTITY_NAMES = [
 ];
 
 export function createStore(databasePath = ":memory:") {
+  const demoDataEnabled = process.env.NODE_ENV !== "production" || process.env.SEED_DEMO_DATA === "true";
   const users = [
     {
       id: "usr-1",
@@ -525,6 +536,12 @@ export function createStore(databasePath = ":memory:") {
       },
     ],
   };
+  if (!demoDataEnabled) {
+    users.length = 0;
+    profiles.clear();
+    for (const key of Object.keys(collections)) collections[key] = [];
+  }
+
   const entities = Object.fromEntries(ENTITY_NAMES.map((name) => [name, []]));
   let entitiesVersion = 0;
   entities.User = users.map((user) => ({
@@ -559,6 +576,7 @@ export function createStore(databasePath = ":memory:") {
   `);
 
   const persisted = database.prepare("SELECT format, version, payload FROM app_state WHERE state_key = 'primary'").get();
+  let removedDemoAccounts = false;
   if (persisted) {
     if (persisted.format !== STATE_FORMAT || persisted.version !== STATE_VERSION) {
       database.close();
@@ -606,6 +624,18 @@ export function createStore(databasePath = ":memory:") {
         status: user.status,
       }));
     }
+  }
+
+  if (!demoDataEnabled) {
+    const remainingUsers = users.filter(
+      (user) => !DEMO_USER_IDS.has(user.id) && !DEMO_EMAILS.has(String(user.email || "").toLowerCase()),
+    );
+    removedDemoAccounts = remainingUsers.length !== users.length;
+    users.splice(0, users.length, ...remainingUsers);
+    for (const id of DEMO_USER_IDS) profiles.delete(id);
+    entities.User = entities.User.filter(
+      (user) => !DEMO_USER_IDS.has(user.id) && !DEMO_EMAILS.has(String(user.email || "").toLowerCase()),
+    );
   }
 
   const needsEntityMigration = entitiesVersion < 1;
@@ -799,7 +829,7 @@ export function createStore(databasePath = ":memory:") {
   for (const user of users) {
     if (!user.password_hash) user.password_hash = demoPasswordHash;
   }
-  if (!persisted || needsPasswordUpgrade || needsEntityMigration) persist();
+  if (!persisted || needsPasswordUpgrade || needsEntityMigration || removedDemoAccounts) persist();
 
   return {
     users,

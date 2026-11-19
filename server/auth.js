@@ -5,7 +5,16 @@ import { fileURLToPath } from "node:url";
 
 const dataDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "../data");
 function loadSecret(environmentName, filename) {
-  if (process.env[environmentName]) return process.env[environmentName];
+  const configured = process.env[environmentName]?.trim();
+  if (configured) {
+    if (process.env.NODE_ENV === "production" && configured.length < 32) {
+      throw new Error(`${environmentName} must be at least 32 characters in production.`);
+    }
+    return configured;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(`${environmentName} must be configured in production.`);
+  }
   mkdirSync(dataDirectory, { recursive: true });
   const path = resolve(dataDirectory, filename);
   try { return readFileSync(path, "utf8").trim(); } catch (error) {

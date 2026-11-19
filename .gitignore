@@ -1,6 +1,12 @@
 node_modules/
 dist/
 .tanstack/
-.env*
+.env
+.env.*
+!.env.example
 .reference-*.png
 data/
+.wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example

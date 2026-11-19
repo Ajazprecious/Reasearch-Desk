@@ -3,16 +3,26 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
-    "dev": "vite dev --host 127.0.0.1",
-    "server": "node server/index.js",
-    "start": "concurrently -k \"npm:server\" \"npm:dev\"",
-    "start:preview": "concurrently -k \"npm:server\" \"vite preview --host 127.0.0.1\"",
+    "dev": "vite dev",
+    "server": "node --env-file-if-exists=.env server/index.js",
+    "start": "npm run dev",
     "build": "vite build",
+    "build:pages": "vite build",
     "test": "node --test",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:worker": "npm run build && wrangler deploy",
+    "deploy:pages": "npm run build:pages && wrangler pages deploy dist/client --project-name=researchdesk",
+    "db:create": "wrangler d1 create researchdesk",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "r2:create": "wrangler r2 bucket create researchdesk-uploads",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -81,6 +91,7 @@
     "zod": "~4.6.7"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "1.29.0",
     "@eslint/js": "^9.19.0",
     "@vitejs/plugin-react": "^6.0.5",
     "autoprefixer": "^10.4.20",
@@ -90,7 +101,8 @@
     "globals": "^15.14.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "vite": "^8.2.4"
+    "vite": "^8.2.4",
+    "wrangler": "4.74.0"
   },
   "overrides": {
     "undici": "7.30.1"

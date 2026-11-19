@@ -1,4 +1,5 @@
 const TOKEN_KEY = "researchdesk_session";
+const apiBase = String(import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
 function token() {
   if (typeof window === "undefined") return null;
@@ -6,9 +7,9 @@ function token() {
 }
 
 async function request(path, { method = "GET", body, headers = {} } = {}) {
-  const response = await fetch(`/api/${path}`, {
+  const response = await fetch(`${apiBase}/api/${path}`, {
     method,
-    credentials: "same-origin",
+    credentials: "omit",
     headers: {
       ...(body === undefined ? {} : { "Content-Type": "application/json" }),
       ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
@@ -97,19 +98,25 @@ export const localClient = {
   integrations: {
     Core: {
       UploadPrivateFile: async ({ file }) => upload(file),
-      UploadPublicFile: async ({ file }) => upload(file),
-      CreateFileSignedUrl: async ({ file_uri }) => ({ signed_url: file_uri }),
+      UploadPublicFile: async ({ file }) => upload(file, true),
+      CreateFileSignedUrl: async ({ file_uri }) => request("files/signed-url", {
+        method: "POST",
+        body: { file_uri },
+      }),
     },
   },
   functions: { invoke: (name, data) => request(`functions/${name}`, { method: "POST", body: data }) },
 };
 
-async function upload(file) {
+async function upload(file, isPublic = false) {
   const content = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result).split(",", 2)[1]);
     reader.onerror = () => reject(new Error("Could not read the selected file."));
     reader.readAsDataURL(file);
   });
-  return request("files", { method: "POST", body: { name: file.name, type: file.type, content } });
+  return request("files", {
+    method: "POST",
+    body: { name: file.name, type: file.type, content, public: isPublic },
+  });
 }

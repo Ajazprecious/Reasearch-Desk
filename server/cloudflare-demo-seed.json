@@ -1,0 +1,410 @@
+{
+  "users": [
+    {
+      "id": "usr-1",
+      "name": "Amara Nwosu",
+      "email": "amara.nwosu@example.edu",
+      "identifier": "MIT/IMS/2026/014",
+      "role": "Student",
+      "status": "Active",
+      "department": "Information Technology",
+      "faculty": "Faculty of Computing"
+    },
+    {
+      "id": "usr-2",
+      "name": "Dr. Amina Yusuf",
+      "email": "amina.yusuf@example.edu",
+      "identifier": "Staff ID PG/204",
+      "role": "Supervisor",
+      "status": "Active",
+      "department": "Information Technology",
+      "faculty": "Faculty of Computing"
+    },
+    {
+      "id": "usr-3",
+      "name": "Ibrahim Musa",
+      "email": "ibrahim.musa@example.edu",
+      "identifier": "MSc/CSC/2026/021",
+      "role": "Student",
+      "status": "Active",
+      "department": "Computer Science",
+      "faculty": "Faculty of Computing"
+    },
+    {
+      "id": "usr-4",
+      "name": "Zainab Bello",
+      "email": "zainab.bello@example.edu",
+      "identifier": "MSc/ECO/2026/006",
+      "role": "Student",
+      "status": "Active",
+      "department": "Economics",
+      "faculty": "Faculty of Social Sciences"
+    },
+    {
+      "id": "usr-5",
+      "name": "Dr. Fatima Bello",
+      "email": "fatima.bello@example.edu",
+      "identifier": "Staff ID PG/119",
+      "role": "Supervisor",
+      "status": "Active",
+      "department": "Computer Science",
+      "faculty": "Faculty of Computing"
+    },
+    {
+      "id": "usr-6",
+      "name": "Postgraduate Admin",
+      "email": "admin@example.edu",
+      "identifier": "PG/ADMIN/001",
+      "role": "Administrator",
+      "status": "Active",
+      "department": "Postgraduate School",
+      "faculty": "Graduate Studies"
+    },
+    {
+      "id": "usr-7",
+      "name": "Chidi Obi",
+      "email": "chidi.obi@example.edu",
+      "identifier": "MIT/IMS/2025/018",
+      "role": "Student",
+      "status": "Active",
+      "department": "Information Technology",
+      "faculty": "Faculty of Computing"
+    }
+  ],
+  "entities": {
+    "Assignment": [
+      {
+        "id": "assignment-1",
+        "student_email": "chidi.obi@example.edu",
+        "student_name": "Chidi Obi",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "supervisor_name": "Dr. Amina Yusuf",
+        "research_title": "",
+        "department": "Information Technology",
+        "status": "active",
+        "created_date": "12 Nov 2026",
+        "progress": 0
+      }
+    ],
+    "Defence": [
+      {
+        "id": "def-1",
+        "student_email": "amara.nwosu@example.edu",
+        "student_name": "Amara Nwosu",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "title": "Proposal defence",
+        "scheduled_date": "2026-11-30",
+        "scheduled_time": "10:00",
+        "venue": "Postgraduate Seminar Room",
+        "status": "completed",
+        "notes": "Panel requested clarification of the evaluation plan."
+      },
+      {
+        "id": "def-2",
+        "student_email": "amara.nwosu@example.edu",
+        "student_name": "Amara Nwosu",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "title": "Submit revised methodology",
+        "scheduled_date": "2026-11-30",
+        "scheduled_time": "10:00",
+        "venue": "Postgraduate Seminar Room",
+        "status": "scheduled",
+        "notes": "Clarify the study design and participant selection."
+      }
+    ],
+    "Draft": [
+      {
+        "id": "draft-1",
+        "student_email": "amara.nwosu@example.edu",
+        "student_name": "Amara Nwosu",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "milestone_id": "mile-1",
+        "milestone_title": "Research proposal approval",
+        "title": "Chapter 1 — Introduction",
+        "version": 3,
+        "status": "submitted",
+        "submitted_date": "12 Nov 2026",
+        "content": "Problem statement, research questions and objectives."
+      },
+      {
+        "id": "draft-2",
+        "student_email": "amara.nwosu@example.edu",
+        "student_name": "Amara Nwosu",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "milestone_id": "mile-2",
+        "milestone_title": "Literature review submission",
+        "title": "Chapter 2 — Literature Review",
+        "version": 2,
+        "status": "revision_required",
+        "submitted_date": "10 Nov 2026",
+        "content": "Related work, conceptual framework and identified gap."
+      },
+      {
+        "id": "draft-3",
+        "student_email": "ibrahim.musa@example.edu",
+        "student_name": "Ibrahim Musa",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "milestone_id": "mile-3",
+        "milestone_title": "Proposal defence",
+        "title": "Research proposal",
+        "version": 1,
+        "status": "approved",
+        "submitted_date": "06 Nov 2026",
+        "content": "Proposal submitted for supervisor feedback."
+      }
+    ],
+    "Feedback": [
+      {
+        "id": "feedback-1",
+        "student_email": "amara.nwosu@example.edu",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "draft_id": "draft-2",
+        "milestone_id": "mile-2",
+        "version": 2,
+        "comments": "Strengthen the synthesis between the literature themes and the research gap.",
+        "outcome": "revision_required",
+        "reviewed_date": "12 Nov 2026"
+      }
+    ],
+    "MatchingConfig": [],
+    "MatchingRun": [],
+    "Milestone": [
+      {
+        "id": "mile-1",
+        "student_email": "amara.nwosu@example.edu",
+        "student_name": "Amara Nwosu",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "title": "Research proposal approval",
+        "description": "Finalise the proposal and obtain departmental approval.",
+        "order": 1,
+        "status": "in_progress",
+        "due_date": "20 Nov 2026",
+        "completed_date": null
+      },
+      {
+        "id": "mile-2",
+        "student_email": "amara.nwosu@example.edu",
+        "student_name": "Amara Nwosu",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "title": "Literature review submission",
+        "description": "Submit the reviewed literature chapter.",
+        "order": 2,
+        "status": "not_started",
+        "due_date": "04 Dec 2026",
+        "completed_date": null
+      },
+      {
+        "id": "mile-3",
+        "student_email": "amara.nwosu@example.edu",
+        "student_name": "Amara Nwosu",
+        "supervisor_email": "amina.yusuf@example.edu",
+        "title": "Proposal defence",
+        "description": "Proposal defence completed; address panel feedback.",
+        "order": 3,
+        "status": "approved",
+        "due_date": "30 Oct 2026",
+        "completed_date": "2026-10-30"
+      }
+    ],
+    "Notification": [
+      {
+        "id": "notice-1",
+        "user_email": "amara.nwosu@example.edu",
+        "title": "Feedback received on Chapter 2",
+        "message": "Review the supervisor’s comments and submit a revised version.",
+        "type": "milestone",
+        "is_read": false,
+        "created_date": "Today"
+      },
+      {
+        "id": "notice-2",
+        "user_email": "amara.nwosu@example.edu",
+        "title": "Milestone due soon",
+        "message": "Your proposal approval milestone is due in four days.",
+        "type": "milestone",
+        "is_read": false,
+        "created_date": "Today"
+      }
+    ],
+    "Recommendation": [],
+    "ResearchProfile": [
+      {
+        "id": "research-usr-1",
+        "student_email": "amara.nwosu@example.edu",
+        "student_name": "Amara Nwosu",
+        "research_title": "Design of an Integrated Digital Workspace for Postgraduate Research Supervision",
+        "research_area": "Information Management Systems",
+        "keywords": "postgraduate supervision, digital workspace, progress analytics, supervisor recommendation",
+        "description": "A web-based workspace connecting supervisor matching, writing, drafts, feedback, milestones and progress analytics.",
+        "level": "Masters",
+        "department": "Information Technology",
+        "faculty": "Faculty of Computing",
+        "status": "submitted",
+        "progress": 0,
+        "created_date": "2026-11-19T14:49:05.387Z"
+      },
+      {
+        "id": "research-usr-3",
+        "student_email": "ibrahim.musa@example.edu",
+        "student_name": "Ibrahim Musa",
+        "research_title": "Applied machine learning",
+        "research_area": "Computer Science",
+        "keywords": "",
+        "description": "Expertise and capacity checks passed.",
+        "level": "Masters",
+        "department": "Computer Science",
+        "faculty": "Faculty of Computing",
+        "status": "submitted",
+        "progress": 0,
+        "created_date": "2026-11-19T14:49:05.863Z"
+      },
+      {
+        "id": "research-usr-4",
+        "student_email": "zainab.bello@example.edu",
+        "student_name": "Zainab Bello",
+        "research_title": "Digital financial inclusion",
+        "research_area": "Economics",
+        "keywords": "",
+        "description": "No eligible supervisor is available in Economics. Resolve this within the department; cross-department assignment is not permitted.",
+        "level": "Masters",
+        "department": "Economics",
+        "faculty": "Faculty of Social Sciences",
+        "status": "submitted",
+        "progress": 0,
+        "created_date": "2026-11-19T14:49:05.863Z"
+      },
+      {
+        "id": "research-usr-7",
+        "student_email": "chidi.obi@example.edu",
+        "student_name": "Chidi Obi",
+        "research_title": "",
+        "research_area": "Information Technology",
+        "keywords": "",
+        "description": "",
+        "level": "Masters",
+        "department": "Information Technology",
+        "faculty": "Faculty of Computing",
+        "status": "draft",
+        "progress": 0,
+        "created_date": "2026-11-19T14:49:05.863Z"
+      }
+    ],
+    "SupervisorProfile": [
+      {
+        "id": "supervisor-usr-2",
+        "email": "amina.yusuf@example.edu",
+        "full_name": "Dr. Amina Yusuf",
+        "department": "Information Technology",
+        "faculty": "Faculty of Computing",
+        "academic_rank": "Senior Lecturer",
+        "research_areas": "Information systems, digital transformation, knowledge management",
+        "keywords": "AI systems, research supervision, analytics, HCI",
+        "bio": "Research interests include information systems, digital workspaces, knowledge management, technology adoption and the design and evaluation of digital platforms.",
+        "max_capacity": 8,
+        "current_load": 1,
+        "availability": "available",
+        "preferred_level": "Postgraduate / MIT"
+      },
+      {
+        "id": "supervisor-usr-5",
+        "email": "fatima.bello@example.edu",
+        "full_name": "Dr. Fatima Bello",
+        "department": "Computer Science",
+        "faculty": "Faculty of Computing",
+        "academic_rank": "Lecturer",
+        "research_areas": "Applied machine learning, data mining, natural language processing",
+        "keywords": "machine learning, AI, analytics, data science",
+        "bio": "Research focuses on applied machine learning, data mining and intelligent data systems.",
+        "max_capacity": 6,
+        "current_load": 0,
+        "availability": "available",
+        "preferred_level": "Postgraduate / MSc"
+      }
+    ],
+    "Ticket": [
+      {
+        "id": "ticket-1",
+        "student_email": "amara.nwosu@example.edu",
+        "student_name": "Amara Nwosu",
+        "title": "Unable to update research profile",
+        "description": "My research area changes are not appearing in the profile.",
+        "status": "open",
+        "created_date": "14 Nov 2026"
+      }
+    ],
+    "TicketUpdate": [],
+    "User": [
+      {
+        "id": "usr-1",
+        "email": "amara.nwosu@example.edu",
+        "full_name": "Amara Nwosu",
+        "app_role": "student",
+        "role": "student",
+        "department": "Information Technology",
+        "faculty": "Faculty of Computing",
+        "status": "Active"
+      },
+      {
+        "id": "usr-2",
+        "email": "amina.yusuf@example.edu",
+        "full_name": "Dr. Amina Yusuf",
+        "app_role": "supervisor",
+        "role": "supervisor",
+        "department": "Information Technology",
+        "faculty": "Faculty of Computing",
+        "status": "Active"
+      },
+      {
+        "id": "usr-3",
+        "email": "ibrahim.musa@example.edu",
+        "full_name": "Ibrahim Musa",
+        "app_role": "student",
+        "role": "student",
+        "department": "Computer Science",
+        "faculty": "Faculty of Computing",
+        "status": "Active"
+      },
+      {
+        "id": "usr-4",
+        "email": "zainab.bello@example.edu",
+        "full_name": "Zainab Bello",
+        "app_role": "student",
+        "role": "student",
+        "department": "Economics",
+        "faculty": "Faculty of Social Sciences",
+        "status": "Active"
+      },
+      {
+        "id": "usr-5",
+        "email": "fatima.bello@example.edu",
+        "full_name": "Dr. Fatima Bello",
+        "app_role": "supervisor",
+        "role": "supervisor",
+        "department": "Computer Science",
+        "faculty": "Faculty of Computing",
+        "status": "Active"
+      },
+      {
+        "id": "usr-6",
+        "email": "admin@example.edu",
+        "full_name": "Postgraduate Admin",
+        "app_role": "admin",
+        "role": "admin",
+        "department": "Postgraduate School",
+        "faculty": "Graduate Studies",
+        "status": "Active"
+      },
+      {
+        "id": "usr-7",
+        "email": "chidi.obi@example.edu",
+        "full_name": "Chidi Obi",
+        "app_role": "student",
+        "role": "student",
+        "department": "Information Technology",
+        "faculty": "Faculty of Computing",
+        "status": "Active"
+      }
+    ],
+    "WritingDocument": []
+  }
+}
