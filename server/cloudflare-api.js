@@ -3,6 +3,7 @@ import {
   createFileToken,
   createSessionToken,
   makePasswordHash,
+  PBKDF2_ITERATIONS,
   sessionUserId,
   verifyFileToken,
   verifyPassword,
@@ -73,7 +74,24 @@ async function ensureDemoData(env) {
     if (String(error?.message || error).includes("no such table")) return;
     throw error;
   }
-  if (marker) return;
+  if (marker) {
+    const updates = [];
+    let sharedPasswordHash;
+    for (const account of demoSeed.users) {
+      const row = await env.DB.prepare(
+        "SELECT password_hash FROM accounts WHERE email = ?",
+      ).bind(String(account.email).toLowerCase()).first();
+      if (row?.password_hash && row.password_hash.startsWith(`pbkdf2_sha256$${PBKDF2_ITERATIONS}$`)) continue;
+      sharedPasswordHash ||= await makePasswordHash("ResearchDesk123!");
+      const role = normalizeRole(account.app_role || account.role);
+      const serialized = publicUser({ ...account, app_role: role, role });
+      updates.push(env.DB.prepare(
+        "INSERT INTO accounts (id, email, password_hash, user_json) VALUES (?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash, user_json = excluded.user_json",
+      ).bind(serialized.id, String(account.email).toLowerCase(), sharedPasswordHash, JSON.stringify(serialized)));
+    }
+    if (updates.length) await batchStatements(env.DB, updates);
+    return;
+  }
   const statements = [];
   const sharedPasswordHash = await makePasswordHash("ResearchDesk123!");
   for (const account of demoSeed.users) {
