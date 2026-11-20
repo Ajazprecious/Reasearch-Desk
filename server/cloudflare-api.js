@@ -63,7 +63,16 @@ function isDemoAccount(user) {
 
 async function ensureDemoData(env) {
   if (env.SEED_DEMO_DATA !== "true") return;
-  const marker = await env.DB.prepare("SELECT value FROM app_meta WHERE key = ?").bind("demo_seeded").first();
+  let marker;
+  try {
+    marker = await env.DB.prepare("SELECT value FROM app_meta WHERE key = ?").bind("demo_seeded").first();
+  } catch (error) {
+    // Cloudflare Pages builds can use a D1 binding whose migrations have not
+    // been applied (and are unavailable during the build). Do not turn that
+    // build-only preflight into a database startup failure.
+    if (String(error?.message || error).includes("no such table")) return;
+    throw error;
+  }
   if (marker) return;
   const statements = [];
   const sharedPasswordHash = await makePasswordHash("ResearchDesk123!");
