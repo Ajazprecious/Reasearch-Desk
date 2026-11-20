@@ -14,7 +14,15 @@ export const authMiddleware = createMiddleware({ type: "function" })
       : window.localStorage.getItem("researchdesk_session") || window.sessionStorage.getItem("researchdesk_session");
     return next({ headers: token ? { Authorization: `Bearer ${token}` } : {} });
   })
-  .server(({ next }) => withWorkspace(next, getRequest()));
+  .server(({ next }) => {
+    const request = getRequest();
+    // TanStack prerenders the anonymous SPA document during the build. Do not
+    // open D1 or seed demo data while rendering that document; API/server
+    // function requests still initialise the workspace normally.
+    const acceptsHtml = request.headers.get("Accept")?.includes("text/html");
+    if (request.method === "GET" && acceptsHtml) return next();
+    return withWorkspace(next, request);
+  });
 
 export const workspaceRequestMiddleware = createMiddleware({ type: "request" })
   .server(({ next, request }) => {
