@@ -22,6 +22,7 @@ import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifi
 import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedStudentRouteImport } from './routes/_authed/student'
 import { Route as AuthedSupervisorRouteImport } from './routes/_authed/supervisor'
+import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as ApiTimeRouteImport } from './routes/api/time'
 import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
 import { Route as AuthedAdminAiModelRouteImport } from './routes/_authed/admin/ai-model'
@@ -125,6 +126,11 @@ const AuthedSupervisorRoute = AuthedSupervisorRouteImport.update({
   id: '/supervisor',
   path: '/supervisor',
   getParentRoute: () => AuthedRoute,
+} as any)
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTimeRoute = ApiTimeRouteImport.update({
   id: '/api/time',
@@ -353,6 +359,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthedSettingsRoute
   '/student': typeof AuthedStudentRouteWithChildren
   '/supervisor': typeof AuthedSupervisorRouteWithChildren
+  '/api/$': typeof ApiSplatRoute
   '/api/time': typeof ApiTimeRoute
   '/admin/ai-model': typeof AuthedAdminAiModelRoute
   '/admin/assignments': typeof AuthedAdminAssignmentsRoute
@@ -402,6 +409,7 @@ export interface FileRoutesByTo {
   '/help': typeof AuthedHelpRoute
   '/notifications': typeof AuthedNotificationsRoute
   '/settings': typeof AuthedSettingsRoute
+  '/api/$': typeof ApiSplatRoute
   '/api/time': typeof ApiTimeRoute
   '/': typeof AuthedIndexRoute
   '/admin/ai-model': typeof AuthedAdminAiModelRoute
@@ -456,6 +464,7 @@ export interface FileRoutesById {
   '/_authed/settings': typeof AuthedSettingsRoute
   '/_authed/student': typeof AuthedStudentRouteWithChildren
   '/_authed/supervisor': typeof AuthedSupervisorRouteWithChildren
+  '/api/$': typeof ApiSplatRoute
   '/api/time': typeof ApiTimeRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/admin/ai-model': typeof AuthedAdminAiModelRoute
@@ -512,6 +521,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/student'
     | '/supervisor'
+    | '/api/$'
     | '/api/time'
     | '/admin/ai-model'
     | '/admin/assignments'
@@ -561,6 +571,7 @@ export interface FileRouteTypes {
     | '/help'
     | '/notifications'
     | '/settings'
+    | '/api/$'
     | '/api/time'
     | '/'
     | '/admin/ai-model'
@@ -614,6 +625,7 @@ export interface FileRouteTypes {
     | '/_authed/settings'
     | '/_authed/student'
     | '/_authed/supervisor'
+    | '/api/$'
     | '/api/time'
     | '/_authed/'
     | '/_authed/admin/ai-model'
@@ -663,6 +675,7 @@ export interface RootRouteChildren {
   MfaRoute: typeof MfaRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiSplatRoute: typeof ApiSplatRoute
   ApiTimeRoute: typeof ApiTimeRoute
 }
 
@@ -758,6 +771,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/supervisor'
       preLoaderRoute: typeof AuthedSupervisorRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/time': {
       id: '/api/time'
@@ -1184,6 +1204,7 @@ const rootRouteChildren: RootRouteChildren = {
   MfaRoute: MfaRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiSplatRoute: ApiSplatRoute,
   ApiTimeRoute: ApiTimeRoute,
 }
 export const routeTree = rootRouteImport

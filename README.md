@@ -55,9 +55,9 @@ The Worker and Pages site are separate deployments. The D1 binding ID and R2 buc
    npx wrangler pages deploy dist/client --project-name=researchdesk
    ```
 
-5. Add the final Pages URL to the Worker’s `ALLOWED_ORIGINS` and redeploy the Worker. This origin allowlist is used for both CORS and server-function CSRF checks.
+5. Add the final Pages URL to both the Worker’s `ALLOWED_ORIGINS` and the Pages build variable `VITE_ALLOWED_ORIGINS`, then redeploy both projects. These origin allowlists are used for CORS and server-function CSRF checks.
 
-For CI or Cloudflare Pages Git builds, use `npm run build:pages` and publish `dist/client`. Configure `VITE_API_BASE_URL` in the Pages project’s build environment. The Worker still needs its D1 and R2 bindings, `SESSION_SECRET`, `ALLOWED_ORIGINS`, and (if enabled) `GEMINI_API_KEY`.
+For CI or Cloudflare Pages Git builds, use `npm run build:pages` and publish `dist/client`. Configure `VITE_API_BASE_URL` and `VITE_ALLOWED_ORIGINS` in the Pages project’s build environment. The Worker still needs its D1 and R2 bindings, `SESSION_SECRET`, `ALLOWED_ORIGINS`, and (if enabled) `GEMINI_API_KEY`.
 
 ## Data, uploads, and AI
 

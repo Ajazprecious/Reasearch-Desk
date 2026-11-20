@@ -1,16 +1,18 @@
 import { createCsrfMiddleware, createStart } from "@tanstack/react-start";
 import { authMiddleware, workspaceRequestMiddleware } from "@/lib/auth-middleware";
 
-async function isTrustedOrigin(origin, request) {
-  const { env } = await import("cloudflare:workers");
+function isTrustedOrigin(origin, request) {
   return origin === new URL(request.url).origin ||
-    String(env.ALLOWED_ORIGINS || "").split(",").map((value) => value.trim()).includes(origin);
+    String(import.meta.env.VITE_ALLOWED_ORIGINS || "")
+      .split(",")
+      .map((value) => value.trim())
+      .includes(origin);
 }
 
 const csrfMiddleware = createCsrfMiddleware({
   filter: (context) => context.handlerType === "serverFn",
   origin: (origin, context) => isTrustedOrigin(origin, context.request),
-  secFetchSite: async (site, context) => {
+  secFetchSite: (site, context) => {
     const origin = context.request.headers.get("Origin");
     return origin
       ? isTrustedOrigin(origin, context.request)

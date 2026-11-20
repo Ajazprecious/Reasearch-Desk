@@ -298,6 +298,7 @@ function fileNameFromUri(uri) {
 }
 
 async function handleAuth(request, env, route) {
+  if (!route.startsWith("/api/auth/")) return null;
   const body = request.method === "POST" || request.method === "PATCH" ? await readBody(request) : {};
   if (route === "/api/auth/register" && request.method === "POST") {
     const email = String(body.email || "").trim().toLowerCase();
