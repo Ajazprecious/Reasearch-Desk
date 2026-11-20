@@ -17,7 +17,16 @@ export const authMiddleware = createMiddleware({ type: "function" })
   .server(({ next }) => withWorkspace(next, getRequest()));
 
 export const workspaceRequestMiddleware = createMiddleware({ type: "request" })
-  .server(({ next, request }) => withWorkspace(next, request));
+  .server(({ next, request }) => {
+    // The app deliberately renders document requests anonymously. In particular,
+    // the static SPA shell is prerendered during the build, where a local D1
+    // database may not have the production schema. Do not initialize the
+    // workspace for HTML document requests; server functions still receive it
+    // through authMiddleware below.
+    const acceptsHtml = request.headers.get("Accept")?.includes("text/html");
+    if (request.method === "GET" && acceptsHtml) return next();
+    return withWorkspace(next, request);
+  });
 
 const currentUser = async (context) => {
   try { return await context.getWorkspace().auth.me(); }
