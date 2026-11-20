@@ -549,6 +549,11 @@ export async function handleCloudflareApi(request, env) {
   } catch (error) {
     const status = Number(error?.status) || 500;
     if (status >= 500) console.error("Cloudflare API request failed:", error);
+    if (String(error?.message || "").includes("SESSION_SECRET")) {
+      return jsonResponse({
+        error: "Server configuration error: SESSION_SECRET is missing or invalid.",
+      }, 500);
+    }
     return jsonResponse({ error: status >= 500 ? "Unexpected server error." : error.message }, status);
   }
 }
