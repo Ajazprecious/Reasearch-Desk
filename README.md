@@ -48,6 +48,8 @@ The Worker and Pages site are separate deployments. The D1 binding ID and R2 buc
    npm run deploy:worker
    ```
 
+   Deploy through this script rather than running `wrangler deploy` directly: the Vite build generates the Worker bundle and its Wrangler config in `dist/server`.
+
 4. Set the Pages build variable `VITE_API_BASE_URL` to the deployed Worker URL (for example, `https://researchdesk-api.<your-account>.workers.dev`). Build and deploy the static frontend:
 
    ```sh

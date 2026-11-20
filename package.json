@@ -16,7 +16,7 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
-    "deploy:worker": "npm run build && wrangler deploy",
+    "deploy:worker": "npm run build && wrangler deploy --config dist/server/wrangler.json",
     "deploy:pages": "npm run build:pages && wrangler pages deploy dist/client --project-name=researchdesk",
     "db:create": "wrangler d1 create researchdesk",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
