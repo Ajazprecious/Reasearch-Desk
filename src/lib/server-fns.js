@@ -32,7 +32,8 @@ const GeminiMatchResponse = z.object({
   })).max(40),
 });
 
-const isAdmin = (user) => user?.role === "admin" || user?.app_role === "admin";
+const isAdmin = (user) =>
+  [user?.role, user?.app_role].some((role) => ["admin", "administrator"].includes(String(role || "").toLowerCase()));
 const isSupervisor = (user) => String(user?.app_role || user?.role || "").toLowerCase() === "supervisor";
 const isPendingSupervisor = (user) =>
   isSupervisor(user) && String(user?.status || "").toLowerCase() === "pending verification";
@@ -101,7 +102,7 @@ export const setWorkspaceRole = createServerFn({ method: "POST" })
     const { user } = context;
     // A workspace role is set once. An administrator account may switch between the
     // three workspaces (to review each one); everyone else keeps their stored role.
-    const canSwitch = user.role === "admin";
+    const canSwitch = isAdmin(user);
     if (user.app_role && !canSwitch) return { role: user.app_role };
     if (user.app_role === data.role) return { role: data.role };
     await context.getWorkspace().asServiceRole.entities.User.update(user.id, { app_role: data.role });
@@ -278,7 +279,7 @@ export const generateRecommendations = createServerFn({ method: "POST" })
     }
 
     if (summary.length) {
-      const admins = (await serviceRole.entities.User.list()).filter((candidate) => candidate.role === "admin");
+      const admins = (await serviceRole.entities.User.list()).filter(isAdmin);
       await Promise.all(
         admins.map((candidate) =>
           notify(serviceRole, {
@@ -890,7 +891,7 @@ export const getAdminDirectory = createServerFn({ method: "GET" })
     const { users, profiles, supervisors, assignments } = await adminDataset(serviceRole);
 
     return users.map((user) => {
-      const role = user.role === "admin" ? "admin" : user.app_role || "student";
+      const role = isAdmin(user) ? "admin" : user.app_role || "student";
       const profile = profiles.find((item) => item.student_email === user.email);
       const supervisor = supervisors.find((item) => item.email === user.email);
       return {
@@ -1149,7 +1150,7 @@ export const createTicket = createServerFn({ method: "POST" })
       is_official: false,
     });
 
-    const admins = (await serviceRole.entities.User.list()).filter((candidate) => candidate.role === "admin");
+    const admins = (await serviceRole.entities.User.list()).filter(isAdmin);
     await Promise.all(
       admins.map((admin) =>
         notify(serviceRole, {
@@ -1188,7 +1189,7 @@ export const replyToTicket = createServerFn({ method: "POST" })
     await serviceRole.entities.Ticket.update(ticket.id, { last_update: new Date().toISOString() });
 
     const admins = (await serviceRole.entities.User.list()).filter(
-      (candidate) => candidate.role === "admin" && candidate.email !== user.email,
+      (candidate) => isAdmin(candidate) && candidate.email !== user.email,
     );
     await Promise.all(
       admins.map((admin) =>

@@ -7,7 +7,8 @@ import { DEFAULT_SUPERVISOR_SETTINGS } from "@/lib/supervisor-settings";
 // Supervisor-portal reads: one aggregated payload per screen so the queue, student list,
 // progress and timeline views all speak about the same live data.
 
-const isAdmin = (user) => user?.role === "admin" || user?.app_role === "admin";
+const isAdmin = (user) =>
+  [user?.role, user?.app_role].some((role) => ["admin", "administrator"].includes(String(role || "").toLowerCase()));
 
 function forbidden() {
   setResponseStatus(403);

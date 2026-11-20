@@ -54,8 +54,9 @@ function matches(row, filters) {
 
 function publicUser(user) {
   if (!user) return null;
-  const role = normalizeRole(user.app_role || user.role);
-  return { ...user, full_name: user.full_name || user.name, app_role: role, role };
+  const role = normalizeRole(user.role || user.app_role);
+  const appRole = normalizeRole(user.app_role || role);
+  return { ...user, full_name: user.full_name || user.name, app_role: appRole, role };
 }
 
 function isPendingSupervisor(user) {
@@ -84,15 +85,46 @@ async function ensureDemoData(env) {
     let sharedPasswordHash;
     for (const account of demoSeed.users) {
       const row = await env.DB.prepare(
-        "SELECT password_hash FROM accounts WHERE email = ?",
+        "SELECT id, password_hash, user_json FROM accounts WHERE email = ?",
       ).bind(String(account.email).toLowerCase()).first();
-      if (row?.password_hash && row.password_hash.startsWith(`pbkdf2_sha256$${PBKDF2_ITERATIONS}$`)) continue;
-      sharedPasswordHash ||= await makePasswordHash("ResearchDesk123!");
-      const role = normalizeRole(account.app_role || account.role);
-      const serialized = publicUser({ ...account, app_role: role, role });
-      updates.push(env.DB.prepare(
-        "INSERT INTO accounts (id, email, password_hash, user_json) VALUES (?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash, user_json = excluded.user_json",
-      ).bind(serialized.id, String(account.email).toLowerCase(), sharedPasswordHash, JSON.stringify(serialized)));
+      const role = normalizeRole(account.role || account.app_role);
+      const currentUser = parseJson(row?.user_json);
+      const seededAdmin = role === "admin";
+      const userRecordRow = seededAdmin
+        ? await env.DB.prepare("SELECT payload FROM entity_records WHERE entity = ? AND record_id = ?")
+          .bind("User", account.id).first()
+        : null;
+      const currentEntityUser = parseJson(userRecordRow?.payload);
+      const needsAccountRoleRepair = seededAdmin && normalizeRole(currentUser?.role) !== "admin";
+      const needsEntityRoleRepair = seededAdmin && currentEntityUser &&
+        normalizeRole(currentEntityUser.role) !== "admin";
+      const validPasswordHash = row?.password_hash?.startsWith(`pbkdf2_sha256$${PBKDF2_ITERATIONS}$`);
+      if (validPasswordHash && !needsAccountRoleRepair && !needsEntityRoleRepair) continue;
+
+      const serialized = publicUser({
+        ...(currentUser || account),
+        ...(seededAdmin ? { role: "admin" } : {}),
+        app_role: currentUser?.app_role || role,
+      });
+      if (!validPasswordHash) {
+        sharedPasswordHash ||= await makePasswordHash("ResearchDesk123!");
+        updates.push(env.DB.prepare(
+          "INSERT INTO accounts (id, email, password_hash, user_json) VALUES (?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash, user_json = excluded.user_json",
+        ).bind(serialized.id, String(account.email).toLowerCase(), sharedPasswordHash, JSON.stringify(serialized)));
+      } else {
+        updates.push(env.DB.prepare("UPDATE accounts SET user_json = ? WHERE id = ?")
+          .bind(JSON.stringify(serialized), row.id));
+      }
+      if (needsEntityRoleRepair) {
+        const repairedRecord = publicUser({
+          ...currentEntityUser,
+          role: "admin",
+          app_role: currentEntityUser.app_role || "admin",
+        });
+        updates.push(env.DB.prepare(
+          "UPDATE entity_records SET payload = ?, updated_at = CURRENT_TIMESTAMP WHERE entity = ? AND record_id = ?",
+        ).bind(JSON.stringify(repairedRecord), "User", account.id));
+      }
     }
     if (updates.length) await batchStatements(env.DB, updates);
     return;

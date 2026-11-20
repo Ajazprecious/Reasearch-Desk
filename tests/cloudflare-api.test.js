@@ -7,6 +7,7 @@ class MemoryD1 {
   constructor() {
     this.accounts = new Map();
     this.entities = new Map();
+    this.meta = new Map();
   }
 
   prepare(query) {
@@ -24,6 +25,14 @@ class MemoryD1 {
   }
 
   async first(query, values) {
+    if (query.includes("FROM app_meta WHERE key = ?")) {
+      const value = this.meta.get(values[0]);
+      return value ? { value } : null;
+    }
+    if (query.includes("FROM entity_records WHERE entity = ? AND record_id = ?")) {
+      const record = this.entities.get(values[0])?.get(values[1]);
+      return record ? { payload: JSON.stringify(record) } : null;
+    }
     if (query.includes("FROM accounts WHERE email = ?")) {
       const account = [...this.accounts.values()].find((item) => item.email === values[0]);
       if (!account) return null;
@@ -62,6 +71,12 @@ class MemoryD1 {
     if (query.startsWith("UPDATE entity_records SET payload = ?")) {
       const [payload, entity, id] = values;
       this.entities.get(entity)?.set(id, JSON.parse(payload));
+      return { success: true };
+    }
+    if (query.startsWith("UPDATE accounts SET user_json = ?")) {
+      const [user_json, id] = values;
+      const account = this.accounts.get(id);
+      if (account) this.accounts.set(id, { ...account, user_json });
       return { success: true };
     }
     if (query.startsWith("UPDATE accounts SET email = ?")) {
@@ -147,4 +162,56 @@ test("Cloudflare supervisor registrations require administrator approval", async
   }), env);
   assert.equal(activeSession.status, 200);
   assert.equal((await activeSession.json()).status, "Active");
+
+  const changedWorkspace = await handleCloudflareApi(new Request(
+    `https://api.example.test/api/entities/User/${admin.id}`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ app_role: "student" }),
+    },
+  ), env);
+  assert.equal(changedWorkspace.status, 200);
+  const adminIdentity = await handleCloudflareApi(new Request("https://api.example.test/api/auth/me", {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  }), env);
+  const adminUser = await adminIdentity.json();
+  assert.equal(adminUser.role, "admin");
+  assert.equal(adminUser.app_role, "student");
+});
+
+test("a previously downgraded demo administrator is restored and remains an administrator", async () => {
+  const env = {
+    DB: new MemoryD1(),
+    SEED_DEMO_DATA: "true",
+    SESSION_SECRET: "test-session-secret-with-more-than-32-characters",
+  };
+  env.DB.meta.set("demo_seeded", "true");
+  const admin = {
+    id: "usr-6",
+    email: "admin@example.edu",
+    full_name: "Postgraduate Admin",
+    role: "student",
+    app_role: "student",
+    status: "Active",
+  };
+  env.DB.accounts.set(admin.id, {
+    id: admin.id,
+    email: admin.email,
+    password_hash: "pbkdf2_sha256$100000$salt$hash",
+    user_json: JSON.stringify(admin),
+  });
+  env.DB.entities.set("User", new Map([[admin.id, admin]]));
+  const token = await createSessionToken(admin.id, env);
+
+  const response = await handleCloudflareApi(new Request("https://api.example.test/api/auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  }), env);
+  assert.equal(response.status, 200);
+  const user = await response.json();
+  assert.equal(user.role, "admin");
+  assert.equal(user.app_role, "student");
+
+  const record = env.DB.entities.get("User").get(admin.id);
+  assert.equal(record.role, "admin");
 });

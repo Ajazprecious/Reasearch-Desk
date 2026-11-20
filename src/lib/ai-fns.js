@@ -5,7 +5,8 @@ import { requireUser } from "@/lib/auth-middleware";
 import { GEMINI_MODEL } from "@/lib/ai-model";
 import { generateGeminiJson, generateGeminiText } from "../../server/gemini.js";
 
-const isAdmin = (user) => user?.role === "admin" || user?.app_role === "admin";
+const isAdmin = (user) =>
+  [user?.role, user?.app_role].some((role) => ["admin", "administrator"].includes(String(role || "").toLowerCase()));
 const isStudent = (user) => user?.role === "student" || user?.app_role === "student";
 const isSupervisor = (user) => user?.role === "supervisor" || user?.app_role === "supervisor";
 

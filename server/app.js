@@ -85,11 +85,13 @@ export function createApp(store = createStore()) {
   const publicUser = (user) => {
     if (!user) return null;
     const { password_hash, ...safe } = user;
+    const role = normalizeRole(safe.role || safe.app_role);
+    const appRole = normalizeRole(safe.app_role || role);
     return {
       ...safe,
       full_name: safe.full_name || safe.name,
-      app_role: safe.app_role || normalizeRole(safe.role),
-      role: safe.app_role || normalizeRole(safe.role),
+      app_role: appRole,
+      role,
     };
   };
   const isAdmin = (user) => normalizeRole(user?.role || user?.app_role) === "admin";
@@ -270,7 +272,12 @@ export function createApp(store = createStore()) {
       if (account) {
         Object.assign(account, row);
         account.name = row.full_name || row.name || account.name;
-        if (row.app_role) account.role = row.app_role === "admin" ? "Administrator" : row.app_role[0].toUpperCase() + row.app_role.slice(1);
+        if (row.app_role) {
+          account.app_role = row.app_role;
+          if (normalizeRole(account.role) !== "admin") {
+            account.role = row.app_role === "admin" ? "Administrator" : row.app_role[0].toUpperCase() + row.app_role.slice(1);
+          }
+        }
       }
     }
     response.json(row);

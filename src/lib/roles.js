@@ -15,9 +15,11 @@ export const ROLE_LABEL = {
 
 export function resolveRole(user) {
   if (!user) return null;
-  if (user.role === "admin") return "admin";
-  if (user.app_role === "student" || user.app_role === "supervisor" || user.app_role === "admin") {
-    return user.app_role;
+  const accountRole = String(user.role || "").toLowerCase();
+  const appRole = String(user.app_role || "").toLowerCase();
+  if (accountRole === "admin" || accountRole === "administrator" || appRole === "admin") return "admin";
+  if (appRole === "student" || appRole === "supervisor") {
+    return appRole;
   }
   return null;
 }
