@@ -14,8 +14,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "researchdesk",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_name": "researchdesk-db",
+      "database_id": "5992a3e7-61ab-4d32-ad96-086b6fa6e125",
       "migrations_dir": "migrations"
     }
   ],
