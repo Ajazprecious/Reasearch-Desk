@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Search, Users } from "lucide-react";
+import { AlertTriangle, Check, Search, Users } from "lucide-react";
+import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { useAsync } from "@/hooks/useAsync";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/workspace/PageHeader";
 import { SectionCard } from "@/components/workspace/SectionCard";
 import { EmptyState, LoadingBlock } from "@/components/workspace/EmptyState";
 import { formatDate, initials } from "@/lib/format";
-import { getAdminDirectory } from "@/lib/server-fns";
+import { approveSupervisor, getAdminDirectory } from "@/lib/server-fns";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authed/admin/users")({
@@ -26,11 +28,29 @@ const ROLE_LABEL = { student: "Student", supervisor: "Supervisor", admin: "Admin
 function AdminUsersPage() {
   const search = Route.useSearch();
   const load = useServerFn(getAdminDirectory);
-  const { data, loading, error } = useAsync(() => load(), []);
+  const approve = useServerFn(approveSupervisor);
+  const { data, loading, error, reload } = useAsync(() => load(), []);
   const [role, setRole] = useState("all");
   const [query, setQuery] = useState(search.q || "");
   const [faculty, setFaculty] = useState("all");
   const [department, setDepartment] = useState("all");
+  const [approvingId, setApprovingId] = useState(null);
+
+  async function approveAccount(person) {
+    setApprovingId(person.id);
+    try {
+      const result = await approve({ data: { userId: person.id } });
+      if (result?.status !== "Active") {
+        throw new Error("This supervisor is no longer awaiting approval.");
+      }
+      toast.success(`${person.full_name} approved as a supervisor`);
+      reload();
+    } catch (err) {
+      toast.error(err?.message || "Could not approve this supervisor");
+    } finally {
+      setApprovingId(null);
+    }
+  }
 
   const people = data || [];
   const faculties = useMemo(() => [...new Set(people.map((person) => person.faculty).filter(Boolean))].sort(), [people]);
@@ -51,7 +71,7 @@ function AdminUsersPage() {
 
   return (
     <div className="animate-fade">
-      <PageHeader title="Users" description="Manage students, supervisors and administrators by faculty and department." />
+      <PageHeader title="Users" description="Manage accounts by faculty and department, and approve supervisor registrations." />
 
       {loading ? (
         <LoadingBlock rows={5} />
@@ -106,14 +126,16 @@ function AdminUsersPage() {
           <SectionCard title="Directory" description={`${visible.length} record(s)`} bodyClassName="px-5 py-3 sm:px-6">
             {visible.length ? (
               <div className="overflow-x-auto scrollbar-slim">
-                <table className="w-full min-w-[820px] text-left">
+                <table className="w-full min-w-[980px] text-left">
                   <thead>
                     <tr className="border-b border-slate-100 text-[11px] uppercase tracking-[0.08em] text-slate-400">
                       <th className="py-2.5 pr-4 font-medium">Name</th>
                       <th className="py-2.5 pr-4 font-medium">Role</th>
                       <th className="py-2.5 pr-4 font-medium">Department</th>
                       <th className="py-2.5 pr-4 font-medium">Details</th>
+                      <th className="py-2.5 pr-4 font-medium">Status</th>
                       <th className="py-2.5 font-medium">Joined</th>
+                      <th className="py-2.5 font-medium">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -142,7 +164,32 @@ function AdminUsersPage() {
                         <td className="max-w-[280px] py-3.5 pr-4">
                           <p className="truncate text-[12.5px] text-slate-600">{person.detail}</p>
                         </td>
+                        <td className="py-3.5 pr-4">
+                          <span className={cn(
+                            "inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium",
+                            person.status === "Pending Verification"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-emerald-50 text-emerald-700",
+                          )}>
+                            {person.status || "Active"}
+                          </span>
+                        </td>
                         <td className="py-3.5 text-[12px] text-slate-400">{formatDate(person.created_date)}</td>
+                        <td className="py-3.5">
+                          {person.role === "supervisor" && person.status === "Pending Verification" && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => approveAccount(person)}
+                              disabled={approvingId !== null}
+                              aria-label={`Approve ${person.full_name}`}
+                              className="bg-[#00796B] text-white hover:bg-[#00695C]"
+                            >
+                              <Check aria-hidden="true" />
+                              {approvingId === person.id ? "Approving…" : "Approve"}
+                            </Button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

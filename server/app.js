@@ -76,7 +76,11 @@ export function createApp(store = createStore()) {
     if (request.get("x-researchdesk-service-key") === SERVICE_KEY) {
       return { id: "local-service", email: "service@local", role: "admin", app_role: "admin", full_name: "Local service" };
     }
-    return store.users.find((item) => item.id === sessionUserId(request)) || null;
+    const user = store.users.find((item) => item.id === sessionUserId(request)) || null;
+    return normalizeRole(user?.role || user?.app_role) === "supervisor" &&
+      String(user?.status || "").toLowerCase() === "pending verification"
+      ? null
+      : user;
   };
   const publicUser = (user) => {
     if (!user) return null;
@@ -153,6 +157,9 @@ export function createApp(store = createStore()) {
     };
     store.users.push(user);
     store.entities.User.push(publicUser(user));
+    if (normalizedRole === "supervisor") {
+      return response.status(201).json({ pending_verification: true, user: publicUser(user) });
+    }
     const access_token = createSessionToken(user.id);
     return response.status(201).json({ access_token, user: publicUser(user) });
   });
@@ -162,6 +169,10 @@ export function createApp(store = createStore()) {
     const user = store.users.find((item) => item.email.toLowerCase() === email);
     if (!user || !verifyPassword(request.body?.password, user.password_hash)) {
       return response.status(401).json({ error: "Email or password is incorrect." });
+    }
+    if (normalizeRole(user.role || user.app_role) === "supervisor" &&
+      String(user.status || "").toLowerCase() === "pending verification") {
+      return response.status(403).json({ error: "Your supervisor account is awaiting administrator approval." });
     }
     return response.json({ access_token: createSessionToken(user.id), user: publicUser(user) });
   });

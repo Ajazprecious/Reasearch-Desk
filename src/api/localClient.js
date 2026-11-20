@@ -78,7 +78,7 @@ export const localClient = {
     },
     register: async (data) => {
       const result = await request("auth/register", { method: "POST", body: data });
-      localClient.auth.setToken(result.access_token);
+      if (result?.access_token) localClient.auth.setToken(result.access_token);
       return result;
     },
     logout: async () => {

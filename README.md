@@ -68,6 +68,7 @@ For CI or Cloudflare Pages Git builds, use `npm run build:pages` and publish `di
 - Gemini 3.8 Flash provides supervisor matching, student writing guidance, supervisor review suggestions, and administrator analytics insights. AI calls are on demand. Matching and academic decisions remain human-controlled.
 - Set `GEMINI_API_KEY` only as a Worker secret. The relevant research or writing context is sent to Google only when a user requests an AI action.
 - Email delivery, OTP verification, password-reset email, and institutional OAuth are not configured. Administrator registration remains disabled unless an `ADMIN_INVITATION_CODE` is set.
+- New supervisor accounts remain unable to sign in until an administrator approves them from **Admin → Users**.
 
 ## Validation
 

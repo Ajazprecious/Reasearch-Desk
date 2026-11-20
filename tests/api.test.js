@@ -64,6 +64,58 @@ test("local signup and login issue an authenticated session", async () => {
   assert.ok((await login.json()).access_token);
 });
 
+test("supervisor signup remains pending until an administrator approves it", async () => {
+  const registered = await fetch(`${baseUrl}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "pending.supervisor@example.edu",
+      password: "A-local-password-123",
+      role: "supervisor",
+      full_name: "Pending Supervisor",
+      identifier: "STAFF-009",
+      academic_rank: "Lecturer II",
+      faculty: "Faculty of Science",
+      department: "Computer Science",
+      supervision_capacity: 5,
+      expertise: "Information systems",
+    }),
+  });
+  assert.equal(registered.status, 201);
+  const registration = await registered.json();
+  assert.equal(registration.pending_verification, true);
+  assert.equal(registration.user.status, "Pending Verification");
+  assert.equal(registration.access_token, undefined);
+
+  const deniedLogin = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: registration.user.email, password: "A-local-password-123" }),
+  });
+  assert.equal(deniedLogin.status, 403);
+
+  const adminLogin = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "admin@example.edu", password: "ResearchDesk123!" }),
+  });
+  const adminToken = (await adminLogin.json()).access_token;
+  const approved = await fetch(`${baseUrl}/api/entities/User/${registration.user.id}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "Active" }),
+  });
+  assert.equal(approved.status, 200);
+
+  const allowedLogin = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: registration.user.email, password: "A-local-password-123" }),
+  });
+  assert.equal(allowedLogin.status, 200);
+  assert.ok((await allowedLogin.json()).access_token);
+});
+
 test("administrator self-registration rejects an invalid approval code", async () => {
   const response = await fetch(`${baseUrl}/api/auth/register`, {
     method: "POST",

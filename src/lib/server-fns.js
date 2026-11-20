@@ -18,6 +18,10 @@ function notFound(what) {
   setResponseStatus(404);
   return Object.assign(new Error(`${what} not found`), { status: 404 });
 }
+function conflict(message) {
+  setResponseStatus(409);
+  return Object.assign(new Error(message), { status: 409 });
+}
 
 const GeminiMatchResponse = z.object({
   matches: z.array(z.object({
@@ -29,6 +33,9 @@ const GeminiMatchResponse = z.object({
 });
 
 const isAdmin = (user) => user?.role === "admin" || user?.app_role === "admin";
+const isSupervisor = (user) => String(user?.app_role || user?.role || "").toLowerCase() === "supervisor";
+const isPendingSupervisor = (user) =>
+  isSupervisor(user) && String(user?.status || "").toLowerCase() === "pending verification";
 const isoDate = (date) => date.toISOString().slice(0, 10);
 const today = () => isoDate(new Date());
 const inDays = (days) => {
@@ -122,9 +129,16 @@ export const generateRecommendations = createServerFn({ method: "POST" })
 
     if (!targets.length) return { processed: 0, usedAi: false, students: [] };
 
-    const { items: supervisors } = await serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 200 });
+    const [{ items: supervisors }, { items: pendingUsers }] = await Promise.all([
+      serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 200 }),
+      serviceRole.entities.User.filter({ status: "Pending Verification" }, { limit: 1000 }),
+    ]);
+    const pendingSupervisorEmails = new Set(
+      pendingUsers.filter(isPendingSupervisor).map((candidate) => candidate.email.toLowerCase()),
+    );
     const eligible = supervisors.filter(
       (supervisor) =>
+        !pendingSupervisorEmails.has(String(supervisor.email || "").toLowerCase()) &&
         Number(supervisor.current_load || 0) < Number(supervisor.max_capacity || 0) && supervisor.availability !== "unavailable",
     );
 
@@ -313,6 +327,14 @@ export const confirmAssignment = createServerFn({ method: "POST" })
     const recommendation = await serviceRole.entities.Recommendation.get(data.recommendationId).catch(() => null);
     if (!recommendation) throw notFound("Recommendation");
     if (recommendation.status === "approved") return { ok: false, message: "This student already has a supervisor." };
+
+    const supervisorUsers = await serviceRole.entities.User.filter(
+      { email: recommendation.supervisor_email },
+      { limit: 1 },
+    );
+    if (supervisorUsers.items?.[0] && isPendingSupervisor(supervisorUsers.items[0])) {
+      throw conflict("This supervisor is still awaiting administrator approval.");
+    }
 
     const { items: profiles } = await serviceRole.entities.ResearchProfile.filter(
       { student_email: recommendation.student_email },
@@ -876,6 +898,7 @@ export const getAdminDirectory = createServerFn({ method: "GET" })
         full_name: user.full_name || profile?.student_name || supervisor?.full_name || user.email,
         email: user.email,
         role,
+        status: user.status || "Active",
         department: profile?.department || supervisor?.department || user.department || "—",
         faculty: profile?.faculty || supervisor?.faculty || user.faculty || "—",
         programme: profile?.programme || "—",
@@ -888,6 +911,23 @@ export const getAdminDirectory = createServerFn({ method: "GET" })
         created_date: user.created_date,
       };
     });
+  });
+
+export const approveSupervisor = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(z.object({ userId: z.string().min(1).max(200) }))
+  .handler(async ({ context, data }) => {
+    if (!isAdmin(context.user)) throw forbidden();
+    const serviceRole = context.getWorkspace().asServiceRole;
+    const { items } = await serviceRole.entities.User.filter({ id: data.userId }, { limit: 1 });
+    const supervisor = items?.[0];
+    if (!supervisor || !isSupervisor(supervisor)) throw notFound("Supervisor");
+    if (!isPendingSupervisor(supervisor)) {
+      return { ok: false, status: supervisor.status || "Active" };
+    }
+
+    await serviceRole.entities.User.update(supervisor.id, { status: "Active" });
+    return { ok: true, status: "Active" };
   });
 
 export const getAdminOperations = createServerFn({ method: "GET" })

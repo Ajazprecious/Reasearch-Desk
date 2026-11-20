@@ -58,6 +58,11 @@ function publicUser(user) {
   return { ...user, full_name: user.full_name || user.name, app_role: role, role };
 }
 
+function isPendingSupervisor(user) {
+  return normalizeRole(user?.role || user?.app_role) === "supervisor" &&
+    String(user?.status || "").toLowerCase() === "pending verification";
+}
+
 function isDemoAccount(user) {
   return DEMO_IDS.has(user?.id) || DEMO_EMAILS.has(String(user?.email || "").toLowerCase());
 }
@@ -118,7 +123,7 @@ async function currentUser(request, env) {
   if (!userId) return null;
   const row = await env.DB.prepare("SELECT user_json FROM accounts WHERE id = ?").bind(userId).first();
   const user = publicUser(parseJson(row?.user_json));
-  return user && (env.SEED_DEMO_DATA === "true" || !isDemoAccount(user)) ? user : null;
+  return user && !isPendingSupervisor(user) && (env.SEED_DEMO_DATA === "true" || !isDemoAccount(user)) ? user : null;
 }
 
 function isAdmin(user) {
@@ -395,6 +400,9 @@ async function handleAuth(request, env, route) {
       })));
     }
     await env.DB.batch(statements);
+    if (role === "supervisor") {
+      return jsonResponse({ pending_verification: true, user }, 201);
+    }
     return jsonResponse({ access_token: await createSessionToken(user.id, env), user }, 201);
   }
   if (route === "/api/auth/login" && request.method === "POST") {
@@ -402,6 +410,7 @@ async function handleAuth(request, env, route) {
     const account = await env.DB.prepare("SELECT id, password_hash, user_json FROM accounts WHERE email = ?").bind(email).first();
     if (!account || !(await verifyPassword(body.password, account.password_hash))) fail(401, "Email or password is incorrect.");
     const user = publicUser(parseJson(account.user_json));
+    if (isPendingSupervisor(user)) fail(403, "Your supervisor account is awaiting administrator approval.");
     if (env.SEED_DEMO_DATA !== "true" && isDemoAccount(user)) fail(401, "Email or password is incorrect.");
     return jsonResponse({ access_token: await createSessionToken(account.id, env), user });
   }

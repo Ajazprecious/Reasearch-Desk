@@ -71,6 +71,7 @@ export function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   useEffect(() => {
     const stored = readIntendedRole();
@@ -108,6 +109,10 @@ export function RegisterPage() {
         expertise: form.expertise,
         invitation_code: form.invitationCode,
       });
+      if (result?.pending_verification) {
+        setPendingApproval(true);
+        return;
+      }
       if (result?.access_token) localClient.auth.setToken(result.access_token);
       window.location.href = returnTo;
     } catch (err) {
@@ -129,6 +134,25 @@ export function RegisterPage() {
     : isSupervisor
       ? "Set up your supervisor profile for research matching, feedback and student progress monitoring."
       : "Administrator access is restricted to authorised institutional staff.";
+
+  if (pendingApproval) {
+    return (
+      <AuthLayout
+        title="Registration submitted"
+        subtitle="Your supervisor profile is ready for administrator review."
+        cardSize="wide"
+        tagline="Manage your research work in one place."
+        description="Your supervisor workspace will be available after your institution verifies your profile."
+        footer={<span>ResearchDesk • Research Workspace</span>}
+      >
+        <div className="rd-auth-notice rd-auth-notice-info" role="status">
+          <strong>Awaiting supervisor approval</strong>
+          <span>An administrator must approve your account before you can sign in. Contact your department administrator if you need an update.</span>
+        </div>
+        <AuthLink to="/login" returnTo={returnTo}>Return to sign in</AuthLink>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
