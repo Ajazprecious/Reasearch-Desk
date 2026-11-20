@@ -9,7 +9,7 @@
   },
   "vars": {
     "SEED_DEMO_DATA": "true",
-    "ALLOWED_ORIGINS": "http://localhost:5173,https://researchdesk.pages.dev"
+    "ALLOWED_ORIGINS": "http://localhost:5173,https://reasearch-desk.pages.dev"
   },
   "d1_databases": [
     {
