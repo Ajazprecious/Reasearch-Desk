@@ -78,9 +78,9 @@ function AdminRecommendationsPage() {
         <div className="space-y-4">
           <div className="flex flex-col gap-2 rounded-2xl border border-slate-200/70 bg-white px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-[13px] font-semibold text-[#22343A]">Department boundary applied before AI matching</p>
+              <p className="text-[13px] font-semibold text-[#22343A]">Department boundary applied before local matching</p>
               <p className="mt-1 max-w-3xl text-[11.5px] leading-relaxed text-slate-500">
-                Every submitted, unassigned student profile is considered in one run. Candidates are restricted to the student's department and checked for supervisor verification, availability and capacity before relevance is ranked.
+                Every submitted, unassigned student profile is considered in one run. Candidates are restricted to the student's department and checked for verification, availability and capacity. Local research similarity ranks eligible supervisors; no assignment is made until you confirm it.
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-[#E8F5E9] px-2.5 py-1 text-[10.5px] font-medium text-[#367C55]">Required</span>
@@ -103,7 +103,7 @@ function AdminRecommendationsPage() {
               <EmptyState
                 icon={CheckCircle2}
                 title="No students waiting for a supervisor"
-                description="Every submitted research profile is either matched already or confirmed. New submissions arrive here automatically."
+                description="No completed matching results to show yet. Run matching after students submit their research profiles."
                 action={
                   <Button onClick={match} disabled={matching} variant="outline" className="h-10 rounded-xl border-slate-200 text-[13px]">
                     Check for new profiles
@@ -150,7 +150,7 @@ function AdminRecommendationsPage() {
                           <div className="min-w-0">
                             <p className="truncate text-[13.5px] font-medium text-[#0A1929]">{candidate.supervisor_name}</p>
                             <p className="mt-0.5 text-[11.5px] text-slate-500">
-                              {candidate.academic_rank} · {candidate.supervisor_department} · load {candidate.capacity_snapshot}
+                              {candidate.academic_rank || "Lecturer"} · {candidate.supervisor_department} · load {candidate.capacity_snapshot}
                             </p>
                             <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-slate-500">{candidate.rationale}</p>
                             {candidate.matched_keywords && (
