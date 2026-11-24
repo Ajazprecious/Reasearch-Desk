@@ -622,8 +622,9 @@ export const getAdminRecommendations = createServerFn({ method: "GET" })
     const studentEmails = new Set(users.filter((account) => String(account.app_role || account.role || "").toLowerCase() === "student").map((account) => String(account.email || "").toLowerCase()));
     const queue = profiles
       .filter((profile) => studentEmails.has(String(profile.student_email || "").toLowerCase()))
+      // Keep every submitted student visible, including newly registered students
+      // who have never been matched. Assigned students remain in the separate history.
       .filter((profile) => profile.status === "submitted" || profile.status === "assigned")
-      .filter((profile) => recommendations.some((recommendation) => recommendation.student_email === profile.student_email) || assignments.some((assignment) => assignment.student_email === profile.student_email && assignment.status === "active"))
       .map((profile) => ({
         profile: {
           student_name: profile.student_name,
