@@ -67,7 +67,7 @@ async function loadMatchingConfig(serviceRole) {
 }
 
 async function recordMatchingRun(serviceRole, run) {
-  await serviceRole.entities.MatchingRun.create({
+  return serviceRole.entities.MatchingRun.create({
     triggered_by: run.triggeredBy || "system",
     scope: run.scope || "all",
     students_processed: run.processed || 0,
@@ -609,8 +609,11 @@ export const getAdminRecommendations = createServerFn({ method: "GET" })
     const { profiles, supervisors, recommendations, assignments } = await adminDataset(serviceRole);
 
     // A student who has never had matching run is offered the action right in the queue.
+    const studentEmails = new Set(users.filter((account) => String(account.app_role || account.role || "").toLowerCase() === "student").map((account) => String(account.email || "").toLowerCase()));
     const queue = profiles
+      .filter((profile) => studentEmails.has(String(profile.student_email || "").toLowerCase()))
       .filter((profile) => profile.status === "submitted" || profile.status === "assigned")
+      .filter((profile) => recommendations.some((recommendation) => recommendation.student_email === profile.student_email) || assignments.some((assignment) => assignment.student_email === profile.student_email && assignment.status === "active"))
       .map((profile) => ({
         profile: {
           student_name: profile.student_name,
