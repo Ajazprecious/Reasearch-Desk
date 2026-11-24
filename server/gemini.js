@@ -7,7 +7,7 @@ export function isGeminiConfigured() {
 }
 
 export function isGeminiTransientError(error) {
-  return ["GEMINI_OVERLOADED","GEMINI_RATE_LIMITED","GEMINI_MODEL_UNAVAILABLE","GEMINI_TIMEOUT"].includes(error?.code);
+  return ["GEMINI_OVERLOADED","GEMINI_RATE_LIMITED","GEMINI_MODEL_UNAVAILABLE","GEMINI_TIMEOUT","GEMINI_ALL_MODELS_UNAVAILABLE"].includes(error?.code);
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
