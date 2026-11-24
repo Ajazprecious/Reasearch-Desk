@@ -62,8 +62,8 @@ function AdminDefencePage() {
                 <table className="w-full min-w-[880px] text-left">
                   <thead>
                     <tr className="border-b border-slate-100 text-[11px] uppercase tracking-[0.08em] text-slate-400">
-                      <th className="py-2.5 pr-4 font-medium">Student</th>
-                      <th className="py-2.5 pr-4 font-medium">Supervisor</th>
+                      <th className="py-2.5 pr-4 font-medium">Department</th>
+                      <th className="py-2.5 pr-4 font-medium">Scope</th>
                       <th className="py-2.5 pr-4 font-medium">Date</th>
                       <th className="py-2.5 pr-4 font-medium">Venue</th>
                       <th className="py-2.5 pr-4 font-medium">Panel</th>
@@ -75,10 +75,10 @@ function AdminDefencePage() {
                     {data.defences.map((defence) => (
                       <tr key={defence.id} className="border-b border-slate-50 text-[13px] last:border-0">
                         <td className="py-3.5 pr-4">
-                          <p className="font-medium text-[#0A1929]">{defence.student_name}</p>
-                          <p className="text-[11.5px] text-slate-400">{defence.department || defence.student_email}</p>
+                          <p className="font-medium text-[#0A1929]">{defence.department || defence.student_name || "Department not set"}</p>
+                          <p className="text-[11.5px] text-slate-400">{defence.department ? "Department-wide" : "Individual record"}</p>
                         </td>
-                        <td className="py-3.5 pr-4 text-slate-600">{defence.supervisor_name || "—"}</td>
+                        <td className="py-3.5 pr-4 text-slate-600">{defence.scope === "department" ? "All department students and supervisors" : defence.supervisor_name || "—"}</td>
                         <td className="py-3.5 pr-4 text-slate-600">
                           {formatDate(defence.scheduled_date)}
                           {defence.scheduled_time && <span className="block text-[11.5px] text-slate-400">{defence.scheduled_time}</span>}
@@ -154,7 +154,7 @@ function AdminDefencePage() {
         </div>
       )}
 
-      <ScheduleDefenceDialog open={open} onOpenChange={setOpen} candidates={data?.candidates || []} onScheduled={reload} />
+      <ScheduleDefenceDialog open={open} onOpenChange={setOpen} departments={data?.departments || []} onScheduled={reload} />
     </div>
   );
 }

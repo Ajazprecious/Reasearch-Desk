@@ -23,6 +23,10 @@ const matches = (row, filters) => Object.entries(filters).every(([key, value]) =
 const canReadEntity = (user, name, row, store) => {
   if (isAdminRole(user)) return true;
   if (name === "User") return row.id === user.id;
+  if (name === "Defence" && row.scope === "department") {
+    const role = normalizeRole(user.role || user.app_role);
+    if (role === "student" || role === "supervisor") return row.department === user.department;
+  }
   if (name === "SupervisorProfile") return true;
   if (["student_email", "user_email", "email"].some((key) => row[key] === user.email)) return true;
   if (normalizeRole(user.role || user.app_role) === "supervisor") {

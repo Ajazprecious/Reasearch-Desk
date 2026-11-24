@@ -6,16 +6,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { SelectField, TextAreaField, TextField } from "@/components/workspace/Field";
 import { scheduleDefence } from "@/lib/server-fns";
 
-export function ScheduleDefenceDialog({ open, onOpenChange, candidates, onScheduled }) {
+export function ScheduleDefenceDialog({ open, onOpenChange, departments = [], onScheduled }) {
   const schedule = useServerFn(scheduleDefence);
-  const [form, setForm] = useState({ studentEmail: "", scheduledDate: "", scheduledTime: "", venue: "", panel: "", notes: "" });
+  const [form, setForm] = useState({ department: "", scheduledDate: "", scheduledTime: "", venue: "", panel: "", notes: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setForm({
-      studentEmail: candidates[0]?.student_email || "",
+      department: departments[0] || "",
       scheduledDate: "",
       scheduledTime: "10:00",
       venue: "",
@@ -23,14 +23,14 @@ export function ScheduleDefenceDialog({ open, onOpenChange, candidates, onSchedu
       notes: "",
     });
     setError("");
-  }, [open, candidates]);
+  }, [open, departments]);
 
   const set = (key) => (event) => setForm((previous) => ({ ...previous, [key]: event.target.value }));
 
   async function submit() {
     setError("");
-    if (!form.studentEmail || !form.scheduledDate) {
-      setError("Choose the student and a defence date.");
+    if (!form.department || !form.scheduledDate) {
+      setError("Choose a department and a defence date.");
       return;
     }
     setBusy(true);
@@ -56,17 +56,14 @@ export function ScheduleDefenceDialog({ open, onOpenChange, candidates, onSchedu
 
         <div className="space-y-4">
           <SelectField
-            id="student"
-            label="Student"
-            value={form.studentEmail}
-            onChange={set("studentEmail")}
+            id="department"
+            label="Department"
+            value={form.department}
+            onChange={set("department")}
             options={
-              candidates.length
-                ? candidates.map((candidate) => ({
-                    value: candidate.student_email,
-                    label: `${candidate.student_name} — ${candidate.department || "department not set"}`,
-                  }))
-                : [{ value: "", label: "No active assignments yet" }]
+              departments.length
+                ? departments.map((department) => ({ value: department, label: department }))
+                : [{ value: "", label: "No departments available" }]
             }
           />
           <div className="grid gap-4 sm:grid-cols-2">

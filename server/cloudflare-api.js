@@ -171,6 +171,10 @@ async function readRecords(env, entity) {
 async function canReadEntity(user, entity, row, env) {
   if (isAdmin(user)) return true;
   if (entity === "User") return row.id === user.id;
+  if (entity === "Defence" && row.scope === "department") {
+    const role = normalizeRole(user.role || user.app_role);
+    if (role === "student" || role === "supervisor") return row.department === user.department;
+  }
   if (entity === "SupervisorProfile") return true;
   if (["student_email", "user_email", "email"].some((key) => row[key] === user.email)) return true;
   if (normalizeRole(user.role || user.app_role) === "supervisor") {

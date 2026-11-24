@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { GEMINI_MODEL } from "../src/lib/ai-model.js";
 import { MATCHING_DEFAULTS, modelLabel, normaliseConfig } from "../src/lib/matching-config.js";
 
-test("matching defaults to Gemini 3.8 Flash", () => {
+test("matching defaults to Gemini 2.5 Flash", () => {
   assert.equal(MATCHING_DEFAULTS.provider, "gemini");
   assert.equal(MATCHING_DEFAULTS.model, GEMINI_MODEL);
   assert.equal(modelLabel(), "Legacy local");

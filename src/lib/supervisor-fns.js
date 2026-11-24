@@ -53,14 +53,19 @@ export const getSupervisorPortal = createServerFn({ method: "GET" })
       serviceRole.entities.Assignment.filter({ supervisor_email: email }, { sort: "-created_date", limit: 100 }),
       serviceRole.entities.Milestone.filter({ supervisor_email: email }, { sort: "order", limit: 400 }),
       serviceRole.entities.Draft.filter({ supervisor_email: email }, { sort: "-submitted_date", limit: 300 }),
-      serviceRole.entities.Defence.filter({ supervisor_email: email }, { sort: "scheduled_date", limit: 100 }),
+      serviceRole.entities.Defence.list({ sort: "scheduled_date", limit: 100 }),
       serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 400 }),
       serviceRole.entities.Feedback.filter({ supervisor_email: email }, { sort: "-reviewed_date", limit: 200 }),
     ]);
 
     const milestones = milestonePage.items || [];
     const drafts = draftPage.items || [];
-    const defences = defencePage.items || [];
+    const department = profilePage.items?.[0]?.department || user.department || "";
+    const defences = (defencePage.items || []).filter((defence) =>
+      defence.scope === "department"
+        ? defence.department === department
+        : defence.supervisor_email === email,
+    );
     const research = researchPages.items || [];
     const feedback = feedbackPage.items || [];
 

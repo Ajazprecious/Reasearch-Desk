@@ -983,7 +983,11 @@ export const getAdminOperations = createServerFn({ method: "GET" })
           supervisor_email: assignment.supervisor_email,
           department: assignment.department,
         })),
-      departments: [...new Set(profiles.map((profile) => profile.department).filter(Boolean))].sort(),
+      departments: [...new Set([
+        ...profiles.map((profile) => profile.department),
+        ...assignments.map((assignment) => assignment.department),
+        ...supervisors.map((supervisor) => supervisor.department),
+      ].filter(Boolean))].sort(),
       supervisorCount: supervisors.length,
     };
   });
@@ -992,7 +996,7 @@ export const scheduleDefence = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(
     z.object({
-      studentEmail: z.string().min(3).max(200),
+      department: z.string().min(2).max(160),
       scheduledDate: z.string().min(8).max(20),
       scheduledTime: z.string().max(20).optional(),
       venue: z.string().max(160).optional(),
@@ -1003,15 +1007,22 @@ export const scheduleDefence = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     if (!isAdmin(context.user)) throw forbidden();
     const serviceRole = context.getWorkspace().asServiceRole;
-    const { assignments } = await adminDataset(serviceRole);
-    const assignment = assignments.find((item) => item.student_email === data.studentEmail);
+    const { users, profiles, supervisors } = await adminDataset(serviceRole);
+    const department = data.department.trim();
+    const departmentUsers = users.filter((user) =>
+      ["student", "supervisor"].includes(String(user.app_role || user.role || "").toLowerCase()) &&
+      (user.department === department ||
+        profiles.find((profile) => profile.student_email === user.email)?.department === department ||
+        supervisors.find((supervisor) => supervisor.email === user.email)?.department === department),
+    );
 
     const defence = await serviceRole.entities.Defence.create({
-      student_email: data.studentEmail,
-      student_name: assignment?.student_name || data.studentEmail,
-      supervisor_email: assignment?.supervisor_email || "",
-      supervisor_name: assignment?.supervisor_name || "",
-      department: assignment?.department || "",
+      scope: "department",
+      department,
+      student_email: "",
+      student_name: `${department} department`,
+      supervisor_email: "",
+      supervisor_name: "",
       scheduled_date: data.scheduledDate,
       scheduled_time: data.scheduledTime || "",
       venue: data.venue || "",
@@ -1020,22 +1031,15 @@ export const scheduleDefence = createServerFn({ method: "POST" })
       notes: data.notes || "",
     });
 
-    await notify(serviceRole, {
-      email: data.studentEmail,
-      title: "Defence scheduled",
-      message: `Your defence is scheduled for ${data.scheduledDate}${data.scheduledTime ? ` at ${data.scheduledTime}` : ""}.`,
-      type: "milestone",
-      link: "/student/milestones",
-    });
-    if (assignment?.supervisor_email) {
-      await notify(serviceRole, {
-        email: assignment.supervisor_email,
-        title: "Defence scheduled",
-        message: `A defence date was set for ${assignment.student_name || data.studentEmail}.`,
-        type: "milestone",
-        link: "/supervisor/students",
-      });
-    }
+    await Promise.all(departmentUsers.map((user) => notify(serviceRole, {
+      email: user.email,
+      title: "Department defence scheduled",
+      message: `A ${department} department defence is scheduled for ${data.scheduledDate}${data.scheduledTime ? ` at ${data.scheduledTime}` : ""}.`,
+      type: "defence",
+      link: String(user.app_role || user.role).toLowerCase() === "supervisor"
+        ? "/supervisor/timeline"
+        : "/student/defence",
+    })));
 
     return { ok: true, id: defence.id };
   });
@@ -1046,7 +1050,30 @@ export const updateDefenceStatus = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     if (!isAdmin(context.user)) throw forbidden();
     const serviceRole = context.getWorkspace().asServiceRole;
-    await serviceRole.entities.Defence.update(data.defenceId, { status: data.status });
+    const defence = await serviceRole.entities.Defence.get(data.defenceId).catch(() => null);
+    if (!defence) throw notFound("Defence");
+    await serviceRole.entities.Defence.update(defence.id, { status: data.status });
+    if (defence.scope === "department" && defence.department) {
+      const users = await serviceRole.entities.User.list();
+      const profiles = await serviceRole.entities.ResearchProfile.list({ limit: 1000 });
+      const supervisors = await serviceRole.entities.SupervisorProfile.list({ limit: 1000 });
+      const recipients = users.filter((user) => {
+        const role = String(user.app_role || user.role || "").toLowerCase();
+        if (!["student", "supervisor"].includes(role)) return false;
+        return user.department === defence.department ||
+          profiles.items.find((profile) => profile.student_email === user.email)?.department === defence.department ||
+          supervisors.items.find((supervisor) => supervisor.email === user.email)?.department === defence.department;
+      });
+      await Promise.all(recipients.map((user) => notify(serviceRole, {
+        email: user.email,
+        title: `Department defence ${data.status}`,
+        message: `The ${defence.department} department defence scheduled for ${defence.scheduled_date} is now ${data.status}.`,
+        type: "defence",
+        link: String(user.app_role || user.role).toLowerCase() === "supervisor"
+          ? "/supervisor/timeline"
+          : "/student/defence",
+      })));
+    }
     return { ok: true };
   });
 

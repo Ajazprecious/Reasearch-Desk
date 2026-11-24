@@ -64,6 +64,55 @@ test("local signup and login issue an authenticated session", async () => {
   assert.ok((await login.json()).access_token);
 });
 
+test("department defence schedules are visible to students and supervisors in that department", async () => {
+  const adminLogin = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "admin@example.edu", password: "ResearchDesk123!" }),
+  });
+  const adminToken = (await adminLogin.json()).access_token;
+  const adminHeaders = { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" };
+  const created = await fetch(`${baseUrl}/api/entities/Defence`, {
+    method: "POST",
+    headers: adminHeaders,
+    body: JSON.stringify({
+      scope: "department",
+      department: "Computer Science",
+      scheduled_date: "2026-12-15",
+      scheduled_time: "10:00",
+      venue: "Postgraduate Seminar Room",
+      panel: "Prof. Adams",
+      status: "scheduled",
+    }),
+  });
+  assert.equal(created.status, 201);
+  const defence = await created.json();
+
+  const studentLogin = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "ibrahim.musa@example.edu", password: "ResearchDesk123!" }),
+  });
+  const studentToken = (await studentLogin.json()).access_token;
+  const studentDefences = await fetch(`${baseUrl}/api/entities/Defence`, {
+    headers: { Authorization: `Bearer ${studentToken}` },
+  });
+  assert.equal(studentDefences.status, 200);
+  assert.ok((await studentDefences.json()).some((item) => item.id === defence.id));
+
+  const supervisorLogin = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "fatima.bello@example.edu", password: "ResearchDesk123!" }),
+  });
+  const supervisorToken = (await supervisorLogin.json()).access_token;
+  const supervisorDefences = await fetch(`${baseUrl}/api/entities/Defence`, {
+    headers: { Authorization: `Bearer ${supervisorToken}` },
+  });
+  assert.equal(supervisorDefences.status, 200);
+  assert.ok((await supervisorDefences.json()).some((item) => item.id === defence.id));
+});
+
 test("supervisor signup remains pending until an administrator approves it", async () => {
   const registered = await fetch(`${baseUrl}/api/auth/register`, {
     method: "POST",

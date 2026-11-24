@@ -17,8 +17,12 @@ export const Route = createFileRoute("/_authed/student/defence")({
 function StudentDefencePage() {
   const { user } = useAuth();
   const { data, loading } = useAsync(async () => {
-    const defences = await localClient.entities.Defence.filter({ student_email: user.email }, { sort: "scheduled_date", limit: 20 });
-    return defences.items;
+    const defences = await localClient.entities.Defence.list({ sort: "scheduled_date", limit: 20 });
+    const visible = defences.items.filter((defence) =>
+      defence.student_email === user.email ||
+      (defence.scope === "department" && defence.department === user.department),
+    );
+    return visible;
   }, [user?.email]);
 
   return (
