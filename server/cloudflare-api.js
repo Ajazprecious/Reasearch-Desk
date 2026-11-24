@@ -169,13 +169,18 @@ async function readRecords(env, entity) {
 }
 
 async function canReadEntity(user, entity, row, env) {
+  if (entity === "SupervisorProfile") {
+    const account = await env.DB.prepare("SELECT user_json FROM accounts WHERE email = ?")
+      .bind(String(row.email || "").toLowerCase()).first();
+    const accountUser = publicUser(parseJson(account?.user_json));
+    return normalizeRole(accountUser?.role || accountUser?.app_role) === "supervisor";
+  }
   if (isAdmin(user)) return true;
   if (entity === "User") return row.id === user.id;
   if (entity === "Defence" && row.scope === "department") {
     const role = normalizeRole(user.role || user.app_role);
     if (role === "student" || role === "supervisor") return row.department === user.department;
   }
-  if (entity === "SupervisorProfile") return true;
   if (["student_email", "user_email", "email"].some((key) => row[key] === user.email)) return true;
   if (normalizeRole(user.role || user.app_role) === "supervisor") {
     if (row.supervisor_email === user.email) return true;

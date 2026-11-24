@@ -490,17 +490,25 @@ export const completeMilestone = createServerFn({ method: "POST" })
 
 async function adminDataset(serviceRole) {
   const [profiles, supervisors, assignments, milestones, recommendations, defences, users] = await Promise.all([
-    serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 1000 }),
-    serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 1000 }),
+    serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 300 }),
+    serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 300 }),
     serviceRole.entities.Assignment.list({ sort: "-created_date", limit: 300 }),
     serviceRole.entities.Milestone.list({ sort: "due_date", limit: 1000 }),
-    serviceRole.entities.Recommendation.list({ sort: "-match_score", limit: 2000 }),
+    serviceRole.entities.Recommendation.list({ sort: "-match_score", limit: 300 }),
     serviceRole.entities.Defence.list({ sort: "scheduled_date", limit: 300 }),
     serviceRole.entities.User.list(),
   ]);
+  const supervisorEmails = new Set(
+    users
+      .filter((user) => !isAdmin(user) && String(user.app_role || user.role || "").toLowerCase() === "supervisor")
+      .map((user) => String(user.email || "").toLowerCase()),
+  );
+  const verifiedSupervisors = supervisors.filter((supervisor) =>
+    supervisorEmails.has(String(supervisor.email || "").toLowerCase()),
+  );
   return {
     profiles: profiles.items,
-    supervisors: supervisors.items,
+    supervisors: verifiedSupervisors,
     assignments: assignments.items,
     milestones: milestones.items,
     recommendations: recommendations.items,
@@ -817,7 +825,9 @@ export const getAdminDirectory = createServerFn({ method: "GET" })
     const serviceRole = context.getWorkspace().asServiceRole;
     const { users, profiles, supervisors, assignments } = await adminDataset(serviceRole);
 
-    return users.map((user) => {
+    return users
+      .filter((user) => !isAdmin(user))
+      .map((user) => {
       const role = isAdmin(user) ? "admin" : user.app_role || "student";
       const profile = profiles.find((item) => item.student_email === user.email);
       const supervisor = supervisors.find((item) => item.email === user.email);
@@ -835,7 +845,7 @@ export const getAdminDirectory = createServerFn({ method: "GET" })
             ? `${supervisor?.current_load || 0}/${supervisor?.max_capacity || 0} supervision slots`
             : role === "student"
               ? profile?.research_title || "No research profile yet"
-              : `${assignments.filter((assignment) => assignment.status === "active").length} active supervisions`,
+              : "Institutional account",
         created_date: user.created_date,
       };
     });
