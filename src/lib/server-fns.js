@@ -72,7 +72,7 @@ async function recordMatchingRun(serviceRole, run) {
     scope: run.scope || "all",
     students_processed: run.processed || 0,
     used_ai: !!run.usedAi,
-    model: run.model || GEMINI_MODEL,
+    model: run.model || "local-similarity",
     confidence: Math.round(run.confidence || 0),
     duration_ms: Math.round(run.durationMs || 0),
     status: run.status || "success",
