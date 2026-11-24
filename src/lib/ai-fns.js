@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { setResponseStatus } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth-middleware";
-import { GEMINI_MODEL } from "@/lib/ai-model";
 import { generateGeminiJsonWithModel, generateGeminiTextWithModel } from "../../server/gemini.js";
 
 const isAdmin = (user) =>
