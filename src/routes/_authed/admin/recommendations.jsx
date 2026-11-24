@@ -23,6 +23,9 @@ function AdminRecommendationsPage() {
   const runMatching = useServerFn(generateRecommendations);
   const { data, loading, error, reload } = useAsync(() => load(), []);
   const [matching, setMatching] = useState(false);
+  // Recommendations are intentionally hidden on a fresh page load. Admins can
+  // inspect a new set only after running matching in the current page session.
+  const [hasRunInSession, setHasRunInSession] = useState(false);
   const [dialog, setDialog] = useState({ open: false, candidate: null, student: null });
   const [unmatched, setUnmatched] = useState([]);
 
@@ -31,10 +34,11 @@ function AdminRecommendationsPage() {
     try {
       const result = await runMatching({ data: {} });
       setUnmatched(result?.unmatched || []);
+      setHasRunInSession(true);
       if (result?.reason === "no-capacity") {
         toast.warning("Every eligible supervisor is at capacity", { description: "Free up capacity or add supervisors, then run matching again." });
       } else if (!result?.processed) {
-        toast.info("Nothing to match right now", { description: "Submitted research profiles already have suggestions." });
+        toast.info("No eligible students found", { description: "There are no newly submitted or still-unconfirmed student profiles waiting for matching." });
       } else {
         if (result.usedLocalFallback) {
           toast.warning(`Local matching used for ${result.processed} student${result.processed === 1 ? "" : "s"}`, {
@@ -112,7 +116,9 @@ function AdminRecommendationsPage() {
               />
             )}
 
-            {awaiting.map((item) => (
+            {awaiting.map((item) => {
+              const visibleCandidates = hasRunInSession ? item.candidates : [];
+              return (
               <SectionCard key={item.profile.student_email} bodyClassName="px-5 py-5 sm:px-6">
                 <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
@@ -139,9 +145,9 @@ function AdminRecommendationsPage() {
                   <StatusBadge status={item.profile.status} />
                 </div>
 
-                {item.candidates.length ? (
+                {visibleCandidates.length ? (
                   <div className="divide-y divide-slate-100">
-                    {item.candidates.map((candidate) => (
+                    {visibleCandidates.map((candidate) => (
                       <div key={candidate.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 gap-3">
                           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0A1929] text-[11.5px] font-semibold text-white">
@@ -191,7 +197,8 @@ function AdminRecommendationsPage() {
                   </div>
                 )}
               </SectionCard>
-            ))}
+              );
+            })}
 
             {queue.some((item) => item.assigned) && (
               <SectionCard title="Recently confirmed" description="Students whose supervisor is already in place." bodyClassName="px-5 py-2 sm:px-6">
