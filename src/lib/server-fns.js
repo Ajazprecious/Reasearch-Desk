@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth-middleware";
 import { rankCandidates } from "@/lib/similarity";
 import { CORE_MILESTONES } from "@/lib/milestones";
 import { normaliseConfig } from "@/lib/matching-config";
+import { GEMINI_MODEL } from "@/lib/ai-model";
+import { isGeminiConfigured } from "../../server/gemini.js";
 
 // ---- shared helpers -------------------------------------------------------
 
