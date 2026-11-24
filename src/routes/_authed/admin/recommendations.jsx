@@ -24,11 +24,13 @@ function AdminRecommendationsPage() {
   const { data, loading, error, reload } = useAsync(() => load(), []);
   const [matching, setMatching] = useState(false);
   const [dialog, setDialog] = useState({ open: false, candidate: null, student: null });
+  const [unmatched, setUnmatched] = useState([]);
 
   async function match() {
     setMatching(true);
     try {
       const result = await runMatching({ data: {} });
+      setUnmatched(result?.unmatched || []);
       if (result?.reason === "no-capacity") {
         toast.warning("Every eligible supervisor is at capacity", { description: "Free up capacity or add supervisors, then run matching again." });
       } else if (!result?.processed) {
@@ -78,11 +80,23 @@ function AdminRecommendationsPage() {
             <div>
               <p className="text-[13px] font-semibold text-[#22343A]">Department boundary applied before AI matching</p>
               <p className="mt-1 max-w-3xl text-[11.5px] leading-relaxed text-slate-500">
-                The system limits candidates to supervisors in the student's department, then checks availability and supervision capacity before ranking relevance.
+                Every submitted, unassigned student profile is considered in one run. Candidates are restricted to the student's department and checked for supervisor verification, availability and capacity before relevance is ranked.
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-[#E8F5E9] px-2.5 py-1 text-[10.5px] font-medium text-[#367C55]">Required</span>
           </div>
+          {unmatched.length > 0 && (
+            <SectionCard title={"Could not match " + unmatched.length + " student" + (unmatched.length === 1 ? "" : "s")} description="These profiles were checked but need attention before a supervisor can be suggested." bodyClassName="px-5 py-3 sm:px-6">
+              <div className="divide-y divide-slate-100">
+                {unmatched.map((item) => (
+                  <div key={item.student_email} className="py-3">
+                    <p className="text-[13px] font-medium text-[#0A1929]">{item.student_name || item.student_email}</p>
+                    <p className="text-[11.5px] text-slate-500">{item.department || "Department not set"} · {item.reason || "No eligible supervisor was found."}</p>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
           <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           <div className="space-y-5">
             {!awaiting.length && (
@@ -169,7 +183,7 @@ function AdminRecommendationsPage() {
                 ) : (
                   <div className="py-4">
                     <p className="text-[12.5px] text-slate-500">
-                      No ranked suggestions stored for this profile yet — run matching to compare it against supervisor expertise.
+                      No ranked suggestions are stored for this profile yet. Run matching to check all eligible students, or review the unmatched list above for eligibility issues.
                     </p>
                     <Button onClick={match} disabled={matching} variant="outline" className="mt-3 h-9 rounded-lg border-slate-200 text-[12.5px]">
                       {matching ? "Matching…" : "Run matching now"}
