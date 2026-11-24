@@ -66,3 +66,19 @@ test("Gemini overloaded responses are classified for local fallback", async (t) 
     return true;
   });
 });
+
+test("Gemini unavailable model responses trigger the local fallback", async (t) => {
+  restoreGeminiKey(t);
+  process.env.GEMINI_API_KEY = "test-gemini-key";
+  t.mock.method(globalThis, "fetch", async () => ({
+    ok: false,
+    status: 404,
+    json: async () => ({ error: { message: "The model is no longer available." } }),
+  }));
+
+  await assert.rejects(generateGeminiText({ system: "test", prompt: "test" }), (error) => {
+    assert.equal(error.status, 404);
+    assert.equal(error.code, "GEMINI_MODEL_UNAVAILABLE");
+    return true;
+  });
+});

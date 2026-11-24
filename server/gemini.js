@@ -9,6 +9,7 @@ export function isGeminiConfigured() {
 export function isGeminiTransientError(error) {
   return error?.code === "GEMINI_OVERLOADED" ||
     error?.code === "GEMINI_RATE_LIMITED" ||
+    error?.code === "GEMINI_MODEL_UNAVAILABLE" ||
     error?.code === "GEMINI_TIMEOUT";
 }
 
@@ -72,10 +73,17 @@ export async function generateGeminiText({ system, prompt, temperature = 0.3, ma
       await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
       continue;
     }
-    const transient = response.status === 503;
+    const transient = [404, 429, 503].includes(response.status);
+    const code = transient
+      ? response.status === 404
+        ? "GEMINI_MODEL_UNAVAILABLE"
+        : response.status === 503
+          ? "GEMINI_OVERLOADED"
+          : "GEMINI_RATE_LIMITED"
+      : "GEMINI_REQUEST_FAILED";
     throw Object.assign(new Error(`Gemini API request failed (${response.status})${detail ? `: ${detail}` : "."}`), {
       status: response.status,
-      code: transient ? "GEMINI_OVERLOADED" : response.status === 429 ? "GEMINI_RATE_LIMITED" : "GEMINI_REQUEST_FAILED",
+      code,
     });
   }
 
