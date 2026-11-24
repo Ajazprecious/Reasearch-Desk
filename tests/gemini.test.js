@@ -50,3 +50,19 @@ test("Gemini API errors are surfaced without exposing the API key", async (t) =>
     return true;
   });
 });
+
+test("Gemini overloaded responses are classified for local fallback", async (t) => {
+  restoreGeminiKey(t);
+  process.env.GEMINI_API_KEY = "test-gemini-key";
+  t.mock.method(globalThis, "fetch", async () => ({
+    ok: false,
+    status: 503,
+    json: async () => ({ error: { message: "The model is currently experiencing high demand." } }),
+  }));
+
+  await assert.rejects(generateGeminiText({ system: "test", prompt: "test" }), (error) => {
+    assert.equal(error.status, 503);
+    assert.equal(error.code, "GEMINI_OVERLOADED");
+    return true;
+  });
+});

@@ -34,9 +34,15 @@ function AdminRecommendationsPage() {
       } else if (!result?.processed) {
         toast.info("Nothing to match right now", { description: "Submitted research profiles already have suggestions." });
       } else {
-        toast.success(`Ranked matches ready for ${result.processed} student${result.processed === 1 ? "" : "s"}`, {
-          description: "Review the suggestions and confirm the assignment.",
-        });
+        if (result.usedLocalFallback) {
+          toast.warning(`Local matching used for ${result.processed} student${result.processed === 1 ? "" : "s"}`, {
+            description: "Gemini is temporarily unavailable; recommendations were generated with local similarity.",
+          });
+        } else {
+          toast.success(`Ranked matches ready for ${result.processed} student${result.processed === 1 ? "" : "s"}`, {
+            description: "Review the suggestions and confirm the assignment.",
+          });
+        }
       }
       reload();
     } catch (err) {
