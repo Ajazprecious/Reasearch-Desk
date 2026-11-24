@@ -122,30 +122,38 @@ export const generateRecommendations = createServerFn({ method: "POST" })
     if (!config.engine_enabled) return { processed: 0, usedAi: false, students: [], unmatched: [], reason: "disabled" };
     const started = Date.now();
 
-    const { items: profiles } = await serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 1000 });
+    const { items: profiles } = await serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 200 });
     const targets = profiles
       .filter((profile) => profile.status === "submitted" && !profile.supervisor_email)
-      .filter((profile) => (admin && !onlyFor ? true : profile.student_email === (onlyFor || user.email)));
+      .filter((profile) => (admin && !onlyFor ? true : profile.student_email === (onlyFor || user.email)))
+      .slice(0, 6);
 
     if (!targets.length) return { processed: 0, usedAi: false, students: [] };
 
-    const [{ items: supervisors }, { items: pendingUsers }] = await Promise.all([
-      serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 1000 }),
+    const [{ items: supervisors }, { items: pendingUsers }, { items: accountUsers }] = await Promise.all([
+      serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 200 }),
       serviceRole.entities.User.filter({ status: "Pending Verification" }, { limit: 1000 }),
+      serviceRole.entities.User.list(),
     ]);
     const pendingSupervisorEmails = new Set(
       pendingUsers.filter(isPendingSupervisor).map((candidate) => candidate.email.toLowerCase()),
     );
+    const supervisorEmails = new Set(
+      accountUsers
+        .filter((candidate) => {
+          const role = String(candidate.app_role || candidate.role || "").toLowerCase();
+          return role === "supervisor" && String(candidate.status || "Active").toLowerCase() !== "pending verification";
+        })
+        .map((candidate) => String(candidate.email || "").toLowerCase()),
+    );
     const eligible = supervisors.filter(
       (supervisor) =>
+        supervisorEmails.has(String(supervisor.email || "").toLowerCase()) &&
         !pendingSupervisorEmails.has(String(supervisor.email || "").toLowerCase()) &&
         Number(supervisor.current_load || 0) < Number(supervisor.max_capacity || 0) && supervisor.availability !== "unavailable",
     );
 
-    if (!eligible.length) {
-      const unmatched = targets.map((profile) => ({ student_email: profile.student_email, student_name: profile.student_name, department: profile.department, reason: "No verified, available supervisor currently has spare capacity." }));
-      return { processed: 0, usedAi: false, students: [], unmatched, reason: "no-capacity" };
-    }
+    if (!eligible.length) return { processed: 0, usedAi: false, students: [], reason: "no-capacity" };
 
     const summary = [];
     const unmatched = [];
@@ -162,7 +170,7 @@ export const generateRecommendations = createServerFn({ method: "POST" })
         text: [supervisor.research_areas, supervisor.keywords, supervisor.bio, supervisor.department].filter(Boolean).join(" "),
       }));
       if (!candidates.length) {
-        unmatched.push({ student_email: profile.student_email, student_name: profile.student_name, department: profile.department, reason: `No verified, available supervisor with spare capacity was found in ${profile.department || "the student department"}.` });
+        unmatched.push({ student_email: profile.student_email, student_name: profile.student_name, department: profile.department });
         continue;
       }
       const localRanked = rankCandidates(query, candidates);
@@ -589,17 +597,25 @@ export const completeMilestone = createServerFn({ method: "POST" })
 
 async function adminDataset(serviceRole) {
   const [profiles, supervisors, assignments, milestones, recommendations, defences, users] = await Promise.all([
-    serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 1000 }),
-    serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 1000 }),
+    serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 300 }),
+    serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 300 }),
     serviceRole.entities.Assignment.list({ sort: "-created_date", limit: 300 }),
     serviceRole.entities.Milestone.list({ sort: "due_date", limit: 1000 }),
-    serviceRole.entities.Recommendation.list({ sort: "-match_score", limit: 2000 }),
+    serviceRole.entities.Recommendation.list({ sort: "-match_score", limit: 300 }),
     serviceRole.entities.Defence.list({ sort: "scheduled_date", limit: 300 }),
     serviceRole.entities.User.list(),
   ]);
+  const supervisorEmails = new Set(
+    users
+      .filter((user) => !isAdmin(user) && String(user.app_role || user.role || "").toLowerCase() === "supervisor")
+      .map((user) => String(user.email || "").toLowerCase()),
+  );
+  const verifiedSupervisors = supervisors.filter((supervisor) =>
+    supervisorEmails.has(String(supervisor.email || "").toLowerCase()),
+  );
   return {
     profiles: profiles.items,
-    supervisors: supervisors.items,
+    supervisors: verifiedSupervisors,
     assignments: assignments.items,
     milestones: milestones.items,
     recommendations: recommendations.items,
@@ -913,7 +929,9 @@ export const getAdminDirectory = createServerFn({ method: "GET" })
     const serviceRole = context.getWorkspace().asServiceRole;
     const { users, profiles, supervisors, assignments } = await adminDataset(serviceRole);
 
-    return users.map((user) => {
+    return users
+      .filter((user) => !isAdmin(user))
+      .map((user) => {
       const role = isAdmin(user) ? "admin" : user.app_role || "student";
       const profile = profiles.find((item) => item.student_email === user.email);
       const supervisor = supervisors.find((item) => item.email === user.email);
@@ -931,7 +949,7 @@ export const getAdminDirectory = createServerFn({ method: "GET" })
             ? `${supervisor?.current_load || 0}/${supervisor?.max_capacity || 0} supervision slots`
             : role === "student"
               ? profile?.research_title || "No research profile yet"
-              : `${assignments.filter((assignment) => assignment.status === "active").length} active supervisions`,
+              : "Institutional account",
         created_date: user.created_date,
       };
     });

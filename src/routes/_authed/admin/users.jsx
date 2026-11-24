@@ -80,7 +80,7 @@ function AdminUsersPage() {
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            {["all", "student", "supervisor", "admin"].map((option) => (
+            {["all", "student", "supervisor"].map((option) => (
               <button
                 key={option}
                 type="button"
@@ -92,7 +92,7 @@ function AdminUsersPage() {
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
                 )}
               >
-                {option === "all" ? "All users" : option === "admin" ? "Administrators" : `${ROLE_LABEL[option]}s`}
+                {option === "all" ? "All users" : `${ROLE_LABEL[option]}s`}
               </button>
             ))}
           </div>

@@ -29,6 +29,24 @@ test("lists users and applies role filters", async () => {
   assert.ok(users.every((user) => user.role === "Supervisor"));
 });
 
+test("administrators are not exposed as supervisors or student workspace matches", async () => {
+  const adminLogin = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "admin@example.edu", password: "ResearchDesk123!" }),
+  });
+  assert.equal(adminLogin.status, 200);
+  const adminToken = (await adminLogin.json()).access_token;
+  const headers = { Authorization: `Bearer ${adminToken}` };
+
+  const [users, supervisors] = await Promise.all([
+    fetch(`${baseUrl}/api/entities/User`, { headers }).then((response) => response.json()),
+    fetch(`${baseUrl}/api/entities/SupervisorProfile`, { headers }).then((response) => response.json()),
+  ]);
+  assert.ok(!users.some((user) => user.email === "admin@example.edu" && user.role !== "admin"));
+  assert.ok(!supervisors.some((profile) => profile.email === "admin@example.edu"));
+});
+
 test("local signup and login issue an authenticated session", async () => {
   const registered = await fetch(`${baseUrl}/api/auth/register`, {
     method: "POST",

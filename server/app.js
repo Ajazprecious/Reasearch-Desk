@@ -21,13 +21,16 @@ const matches = (row, filters) => Object.entries(filters).every(([key, value]) =
   return Array.isArray(expected) ? expected.includes(row[key]) : row[key] === expected;
 });
 const canReadEntity = (user, name, row, store) => {
+  if (name === "SupervisorProfile") {
+    const account = store.users.find((candidate) => candidate.email === row.email);
+    return normalizeRole(account?.role || account?.app_role) === "supervisor";
+  }
   if (isAdminRole(user)) return true;
   if (name === "User") return row.id === user.id;
   if (name === "Defence" && row.scope === "department") {
     const role = normalizeRole(user.role || user.app_role);
     if (role === "student" || role === "supervisor") return row.department === user.department;
   }
-  if (name === "SupervisorProfile") return true;
   if (["student_email", "user_email", "email"].some((key) => row[key] === user.email)) return true;
   if (normalizeRole(user.role || user.app_role) === "supervisor") {
     if (row.supervisor_email === user.email) return true;
@@ -359,6 +362,12 @@ export function createApp(store = createStore()) {
     const role = String(request.query.role || "");
     const department = String(request.query.department || "");
     const users = store.users.filter((user) => {
+      const accountRole = normalizeRole(user.role || user.app_role);
+      if (accountRole === "admin") return false;
+      if (role) {
+        const requestedRole = normalizeRole(role);
+        if (accountRole !== requestedRole) return false;
+      }
       const matchesSearch =
         !search ||
         [user.name, user.email, user.identifier, user.department, user.faculty]
