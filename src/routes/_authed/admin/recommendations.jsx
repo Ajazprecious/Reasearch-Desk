@@ -189,7 +189,7 @@ function AdminRecommendationsPage() {
                 ) : (
                   <div className="py-4">
                     <p className="text-[12.5px] text-slate-500">
-                      No ranked suggestions are stored for this profile yet. Run matching to check all eligible students, or review the unmatched list above for eligibility issues.
+                      Saved matches are hidden after a page refresh. Run matching to generate a fresh set of suggestions for all eligible, unconfirmed students.
                     </p>
                     <Button onClick={match} disabled={matching} variant="outline" className="mt-3 h-9 rounded-lg border-slate-200 text-[12.5px]">
                       {matching ? "Matching…" : "Run matching now"}
