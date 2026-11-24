@@ -148,7 +148,8 @@ export const generateRecommendations = createServerFn({ method: "POST" })
     const summary = [];
     const unmatched = [];
     const prepared = [];
-    let usedAiAny = false;\n    let actualModelUsed = GEMINI_MODEL;
+    let usedAiAny = false;
+    let actualModelUsed = GEMINI_MODEL;
     let usedLocalFallback = false;
     let confidenceTotal = 0;
 
@@ -194,7 +195,8 @@ export const generateRecommendations = createServerFn({ method: "POST" })
           temperature: 0.1,
           maxOutputTokens: 1800,
         });
-        actualModelUsed = modelResult.model;\n        const validated = GeminiMatchResponse.safeParse(modelResult.data);
+        actualModelUsed = modelResult.model;
+        const validated = GeminiMatchResponse.safeParse(modelResult.data);
         if (!validated.success) throw new Error("Gemini returned invalid supervisor rankings. Please run matching again.");
         modelMatches = new Map(validated.data.matches.map((match) => [match.candidate_id, match]));
         usedAiAny = true;
