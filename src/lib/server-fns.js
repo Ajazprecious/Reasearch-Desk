@@ -606,7 +606,7 @@ export const getAdminRecommendations = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     if (!isAdmin(context.user)) throw forbidden();
     const serviceRole = context.getWorkspace().asServiceRole;
-    const { profiles, supervisors, recommendations, assignments } = await adminDataset(serviceRole);
+    const { profiles, supervisors, recommendations, assignments, users } = await adminDataset(serviceRole);
 
     // A student who has never had matching run is offered the action right in the queue.
     const studentEmails = new Set(users.filter((account) => String(account.app_role || account.role || "").toLowerCase() === "student").map((account) => String(account.email || "").toLowerCase()));
