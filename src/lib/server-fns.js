@@ -130,7 +130,7 @@ export const generateRecommendations = createServerFn({ method: "POST" })
     if (!targets.length) return { processed: 0, usedAi: false, students: [] };
 
     const [{ items: supervisors }, { items: pendingUsers }] = await Promise.all([
-      serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 200 }),
+      serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 1000 }),
       serviceRole.entities.User.filter({ status: "Pending Verification" }, { limit: 1000 }),
     ]);
     const pendingSupervisorEmails = new Set(
