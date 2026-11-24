@@ -122,16 +122,15 @@ export const generateRecommendations = createServerFn({ method: "POST" })
     if (!config.engine_enabled) return { processed: 0, usedAi: false, students: [], unmatched: [], reason: "disabled" };
     const started = Date.now();
 
-    const { items: profiles } = await serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 200 });
+    const { items: profiles } = await serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 1000 });
     const targets = profiles
       .filter((profile) => profile.status === "submitted" && !profile.supervisor_email)
-      .filter((profile) => (admin && !onlyFor ? true : profile.student_email === (onlyFor || user.email)))
-      .slice(0, 6);
+      .filter((profile) => (admin && !onlyFor ? true : profile.student_email === (onlyFor || user.email)));
 
     if (!targets.length) return { processed: 0, usedAi: false, students: [] };
 
     const [{ items: supervisors }, { items: pendingUsers }] = await Promise.all([
-      serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 200 }),
+      serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 1000 }),
       serviceRole.entities.User.filter({ status: "Pending Verification" }, { limit: 1000 }),
     ]);
     const pendingSupervisorEmails = new Set(
@@ -143,7 +142,10 @@ export const generateRecommendations = createServerFn({ method: "POST" })
         Number(supervisor.current_load || 0) < Number(supervisor.max_capacity || 0) && supervisor.availability !== "unavailable",
     );
 
-    if (!eligible.length) return { processed: 0, usedAi: false, students: [], reason: "no-capacity" };
+    if (!eligible.length) {
+      const unmatched = targets.map((profile) => ({ student_email: profile.student_email, student_name: profile.student_name, department: profile.department, reason: "No verified, available supervisor currently has spare capacity." }));
+      return { processed: 0, usedAi: false, students: [], unmatched, reason: "no-capacity" };
+    }
 
     const summary = [];
     const unmatched = [];
@@ -160,7 +162,7 @@ export const generateRecommendations = createServerFn({ method: "POST" })
         text: [supervisor.research_areas, supervisor.keywords, supervisor.bio, supervisor.department].filter(Boolean).join(" "),
       }));
       if (!candidates.length) {
-        unmatched.push({ student_email: profile.student_email, student_name: profile.student_name, department: profile.department });
+        unmatched.push({ student_email: profile.student_email, student_name: profile.student_name, department: profile.department, reason: `No verified, available supervisor with spare capacity was found in ${profile.department || "the student department"}.` });
         continue;
       }
       const localRanked = rankCandidates(query, candidates);
@@ -587,11 +589,11 @@ export const completeMilestone = createServerFn({ method: "POST" })
 
 async function adminDataset(serviceRole) {
   const [profiles, supervisors, assignments, milestones, recommendations, defences, users] = await Promise.all([
-    serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 300 }),
-    serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 300 }),
+    serviceRole.entities.ResearchProfile.list({ sort: "-created_date", limit: 1000 }),
+    serviceRole.entities.SupervisorProfile.list({ sort: "-created_date", limit: 1000 }),
     serviceRole.entities.Assignment.list({ sort: "-created_date", limit: 300 }),
     serviceRole.entities.Milestone.list({ sort: "due_date", limit: 1000 }),
-    serviceRole.entities.Recommendation.list({ sort: "-match_score", limit: 300 }),
+    serviceRole.entities.Recommendation.list({ sort: "-match_score", limit: 2000 }),
     serviceRole.entities.Defence.list({ sort: "scheduled_date", limit: 300 }),
     serviceRole.entities.User.list(),
   ]);
